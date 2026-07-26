@@ -166,16 +166,17 @@ fi
 # Only a bounded tail is inspected; large Gaussian logs are never read in full.
 if [ -n "$output_file" ] && [ -r "$output_file" ]; then
   tail_text="$(tail -c "$TAIL_BYTES" "$output_file" 2>/dev/null || true)"
-  normal="$(printf '%s\n' "$tail_text" | grep -c 'Normal termination of Gaussian' || true)"
-  error="$(printf '%s\n' "$tail_text" | grep -Ec 'Error termination|Convergence failure|Number of steps exceeded' || true)"
+  recent_text="$(printf '%s\n' "$tail_text" | tail -n 120)"
+  normal="$(printf '%s\n' "$recent_text" | grep -c 'Normal termination of Gaussian' || true)"
+  error="$(printf '%s\n' "$recent_text" | grep -Ec 'Error termination|Convergence failure|Number of steps exceeded' || true)"
   route="$(printf '%s\n' "$tail_text" | grep -Ei '^[[:space:]]*#' | tail -n1 || true)"
   energy="$(printf '%s\n' "$tail_text" | sed -nE 's/.*SCF Done:[^=]*=[[:space:]]*({NUMBER}).*/\1/p' | tail -n1)"
   if [ -z "$energy" ]; then
     energy="$(printf '%s\n' "$tail_text" | sed -nE 's/.*(EUMP2|CCSD\(T\))[[:space:]]*=[[:space:]]*({NUMBER}).*/\2/p' | tail -n1)"
   fi
   stage=unknown
-  if printf '%s\n' "$tail_text" | grep -Eqi 'Error termination|Convergence failure|Number of steps exceeded'; then stage=error
-  elif printf '%s\n' "$tail_text" | grep -q 'Normal termination of Gaussian'; then stage=completed
+  if printf '%s\n' "$recent_text" | grep -Eqi 'Error termination|Convergence failure|Number of steps exceeded'; then stage=error
+  elif printf '%s\n' "$recent_text" | grep -q 'Normal termination of Gaussian'; then stage=completed
   elif printf '%s\n%s\n' "$route" "$tail_text" | grep -Eqi '(^|[^a-z])irc([^a-z]|$)'; then stage=irc
   elif printf '%s\n%s\n' "$route" "$tail_text" | grep -Eqi 'opt[[:space:]]*=[[:space:]]*\([^)]*(ts|qst2|qst3)'; then stage=transition_state
   elif printf '%s\n%s\n' "$route" "$tail_text" | grep -Eqi '(^|[^a-z])freq([^a-z]|$)|Frequencies --'; then stage=frequency
@@ -225,7 +226,8 @@ def job_from_values(values: dict[str, str], previous: dict[str, Any] | None) -> 
     if not isinstance(prior, dict):
         prior = {}
     if detected:
-        status = "failed" if error else "finished" if normal else "running"
+        # A live Gaussian PID wins over stale Link1 termination text.
+        status = "running"
     elif values.get("PREVIOUS_OUTPUT_READABLE") == "1" and (normal or error):
         status = "failed" if error else "finished"
     else:

@@ -47,12 +47,19 @@ class CollectorTests(unittest.TestCase):
         self.assertEqual(node["system"]["memory"]["used_percent"], 50.0)
 
     def test_finished_and_failed_classification(self) -> None:
-        finished = job_from_values({"JOB_DETECTED": "1", "NORMAL_TERMINATION": "1",
-                                    "ERROR_TERMINATION": "0", "STAGE": "completed"}, None)
-        failed = job_from_values({"JOB_DETECTED": "1", "NORMAL_TERMINATION": "0",
-                                  "ERROR_TERMINATION": "1", "STAGE": "error"}, None)
+        finished = job_from_values({"JOB_DETECTED": "0", "PREVIOUS_OUTPUT_READABLE": "1",
+                                    "NORMAL_TERMINATION": "1", "ERROR_TERMINATION": "0",
+                                    "STAGE": "completed"}, None)
+        failed = job_from_values({"JOB_DETECTED": "0", "PREVIOUS_OUTPUT_READABLE": "1",
+                                  "NORMAL_TERMINATION": "0", "ERROR_TERMINATION": "1",
+                                  "STAGE": "error"}, None)
         self.assertEqual(finished["status"], "finished")
         self.assertEqual(failed["status"], "failed")
+
+    def test_live_pid_wins_over_stale_error_marker(self) -> None:
+        job = job_from_values({"JOB_DETECTED": "1", "NORMAL_TERMINATION": "0",
+                               "ERROR_TERMINATION": "1", "STAGE": "error"}, None)
+        self.assertEqual(job["status"], "running")
 
     def test_completed_job_survives_process_exit_from_previous_output(self) -> None:
         previous = {"gaussian": {"pid": 99, "output_file": "/work/a.out",
