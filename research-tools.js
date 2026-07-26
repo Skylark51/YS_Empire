@@ -1,243 +1,32 @@
-const $ = (id) => document.getElementById(id);
-const parserState = { files: [] };
-const siState = { files: [] };
-
-function setupTabs() {
-  document.querySelectorAll('.tool-tab').forEach((button) => {
-    button.addEventListener('click', () => {
-      document.querySelectorAll('.tool-tab').forEach((item) => item.classList.remove('active'));
-      document.querySelectorAll('.tool-panel').forEach((item) => item.classList.remove('active'));
-      button.classList.add('active');
-      $(button.dataset.target).classList.add('active');
-    });
-  });
-}
-
-function setupDrop(dropId, inputId, state, listId) {
-  const drop = $(dropId);
-  const input = $(inputId);
-  const accept = (files) => {
-    state.files = [...files].filter((file) => /\.(out|log|txt)$/i.test(file.name));
-    renderFileList(state.files, listId);
-  };
-  drop.addEventListener('click', () => input.click());
-  input.addEventListener('change', () => accept(input.files));
-  ['dragenter', 'dragover'].forEach((name) => drop.addEventListener(name, (event) => {
-    event.preventDefault();
-    drop.classList.add('drag');
-  }));
-  ['dragleave', 'drop'].forEach((name) => drop.addEventListener(name, (event) => {
-    event.preventDefault();
-    drop.classList.remove('drag');
-  }));
-  drop.addEventListener('drop', (event) => accept(event.dataTransfer.files));
-}
-
-function renderFileList(files, listId) {
-  const host = $(listId);
-  host.innerHTML = files.length ? files.map((file) => `<div class="file-row"><strong>${escapeHtml(file.name)}</strong><span> · ${formatBytes(file.size)}</span></div>`).join('') : '';
-}
-
-function formatBytes(bytes) {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 ** 2) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / 1024 ** 2).toFixed(1)} MB`;
-}
-
-function escapeHtml(value) {
-  return String(value).replace(/[&<>'"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[char]));
-}
-
-function lastMatch(text, regex, group = 1) {
-  const matches = [...text.matchAll(regex)];
-  return matches.length ? matches[matches.length - 1][group].trim() : '';
-}
-
-function allMatches(text, regex, group = 1) {
-  return [...text.matchAll(regex)].map((match) => match[group].trim());
-}
-
-function extractRoute(text) {
-  const lines = text.split(/\r?\n/);
-  const start = lines.findIndex((line) => /^\s*#/.test(line));
-  if (start < 0) return '';
-  const route = [];
-  for (let i = start; i < Math.min(lines.length, start + 25); i += 1) {
-    if (i > start && !lines[i].trim()) break;
-    route.push(lines[i].trim());
-  }
-  return route.join(' ');
-}
-
-function extractChargeMultiplicity(text) {
-  const match = text.match(/Charge\s*=\s*(-?\d+)\s+Multiplicity\s*=\s*(\d+)/i);
-  return match ? { charge: match[1], multiplicity: match[2] } : { charge: '?', multiplicity: '?' };
-}
-
-function extractFinalOrientation(text) {
-  const marker = /(?:Standard|Input) orientation:/g;
-  const indexes = [...text.matchAll(marker)].map((match) => match.index);
-  if (!indexes.length) return '';
-  const segment = text.slice(indexes[indexes.length - 1]);
-  const lines = segment.split(/\r?\n/);
-  let dashCount = 0;
-  const rows = [];
-  for (const line of lines) {
-    if (/^\s*-{5,}/.test(line)) {
-      dashCount += 1;
-      if (dashCount >= 3 && rows.length) break;
-      continue;
-    }
-    if (dashCount === 2) {
-      const match = line.match(/^\s*\d+\s+(\d+)\s+\d+\s+(-?\d+\.\d+)\s+(-?\d+\.\d+)\s+(-?\d+\.\d+)/);
-      if (match) rows.push({ atomicNumber: Number(match[1]), x: match[2], y: match[3], z: match[4] });
-    }
-  }
-  return rows.map((row) => `${elementSymbol(row.atomicNumber).padEnd(2)} ${row.x.padStart(14)} ${row.y.padStart(14)} ${row.z.padStart(14)}`).join('\n');
-}
-
-function elementSymbol(number) {
-  const symbols = ['', 'H', 'He', 'Li', 'Be', 'B', 'C', 'N', 'O', 'F', 'Ne', 'Na', 'Mg', 'Al', 'Si', 'P', 'S', 'Cl', 'Ar', 'K', 'Ca', 'Sc', 'Ti', 'V', 'Cr', 'Mn', 'Fe', 'Co', 'Ni', 'Cu', 'Zn', 'Ga', 'Ge', 'As', 'Se', 'Br', 'Kr', 'Rb', 'Sr', 'Y', 'Zr', 'Nb', 'Mo', 'Tc', 'Ru', 'Rh', 'Pd', 'Ag', 'Cd', 'In', 'Sn', 'Sb', 'Te', 'I', 'Xe'];
-  return symbols[number] || `X${number}`;
-}
-
-function parseGaussian(text, name) {
-  const route = extractRoute(text);
-  const cm = extractChargeMultiplicity(text);
-  const scfValues = allMatches(text, /SCF Done:\s+E\([^)]*\)\s*=\s*(-?\d+\.\d+)/g);
-  const frequencies = allMatches(text, /Frequencies --\s+([^\n]+)/g).flatMap((line) => line.trim().split(/\s+/)).map(Number).filter(Number.isFinite);
-  const imaginary = frequencies.filter((value) => value < 0);
-  const normalCount = (text.match(/Normal termination of Gaussian/g) || []).length;
-  const errorCount = (text.match(/Error termination/g) || []).length;
-  const thermalG = lastMatch(text, /Sum of electronic and thermal Free Energies=\s*(-?\d+\.\d+)/g);
-  const thermalH = lastMatch(text, /Sum of electronic and thermal Enthalpies=\s*(-?\d+\.\d+)/g);
-  const zpe = lastMatch(text, /Zero-point correction=\s*([+-]?\d+\.\d+)/g);
-  const jobCpu = lastMatch(text, /Job cpu time:\s*([^\n]+)/g);
-  const elapsed = lastMatch(text, /Elapsed time:\s*([^\n]+)/g);
-  const link0 = allMatches(text, /^\s*%(?:chk|oldchk|mem|cpu|nprocshared)=.*$/gmi, 0);
-  return {
-    name, route, charge: cm.charge, multiplicity: cm.multiplicity,
-    status: errorCount ? 'error' : normalCount ? 'normal' : 'incomplete',
-    normalCount, errorCount,
-    scf: scfValues.at(-1) || '', scfCount: scfValues.length,
-    freeEnergy: thermalG, enthalpy: thermalH, zpe,
-    imaginary, minFrequency: frequencies.length ? Math.min(...frequencies) : null,
-    jobCpu, elapsed, link0, coordinates: extractFinalOrientation(text)
-  };
-}
-
-function makeSummary(parsed) {
-  return [
-    `FILE: ${parsed.name}`,
-    `STATUS: ${parsed.status.toUpperCase()} (normal=${parsed.normalCount}, error=${parsed.errorCount})`,
-    `ROUTE: ${parsed.route || 'not found'}`,
-    `CHARGE/MULTIPLICITY: ${parsed.charge} ${parsed.multiplicity}`,
-    `FINAL SCF ENERGY: ${parsed.scf || 'not found'} Hartree`,
-    `THERMAL FREE ENERGY: ${parsed.freeEnergy || 'not found'} Hartree`,
-    `THERMAL ENTHALPY: ${parsed.enthalpy || 'not found'} Hartree`,
-    `ZERO-POINT CORRECTION: ${parsed.zpe || 'not found'} Hartree`,
-    `IMAGINARY FREQUENCIES: ${parsed.imaginary.length ? parsed.imaginary.join(', ') : 'none/frequency data absent'}`,
-    `SCF CYCLES FOUND: ${parsed.scfCount}`,
-    `JOB CPU TIME: ${parsed.jobCpu || 'not found'}`,
-    `ELAPSED TIME: ${parsed.elapsed || 'not found'}`,
-    '', 'LINK0:', parsed.link0.join('\n') || 'not found',
-    '', 'FINAL CARTESIAN COORDINATES:', parsed.coordinates || 'not found'
-  ].join('\n');
-}
-
-function makeAnalysisText(text, parsed, chunkSize) {
-  const important = [];
-  const patterns = [
-    /SCF Done:/, /Optimization completed/, /Stationary point found/, /Frequencies --/,
-    /Zero-point correction=/, /thermal Free Energies=/, /thermal Enthalpies=/,
-    /Normal termination/, /Error termination/, /Convergence failure/, /imaginary frequencies/i,
-    /IRC-IRC-IRC/, /Summary of Optimized Potential Surface Scan/
-  ];
-  const lines = text.split(/\r?\n/);
-  lines.forEach((line, index) => {
-    if (patterns.some((pattern) => pattern.test(line))) {
-      const from = Math.max(0, index - 2);
-      const to = Math.min(lines.length, index + 4);
-      important.push(`--- lines ${from + 1}-${to} ---\n${lines.slice(from, to).join('\n')}`);
-    }
-  });
-  const header = makeSummary(parsed);
-  const deduped = [...new Set(important)].join('\n\n');
-  const compact = `${header}\n\n===== IMPORTANT LOG CONTEXT =====\n${deduped || 'No standard markers found.'}`;
-  const chunks = [];
-  for (let index = 0; index < compact.length; index += chunkSize) chunks.push(compact.slice(index, index + chunkSize));
-  return chunks;
-}
-
-function downloadText(name, content) {
-  const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement('a');
-  anchor.href = url;
-  anchor.download = name;
-  anchor.className = 'download-link';
-  anchor.textContent = name;
-  anchor.addEventListener('click', () => setTimeout(() => URL.revokeObjectURL(url), 1000), { once: true });
-  return anchor;
-}
-
-async function runParser() {
-  const host = $('parserOutputs');
-  host.innerHTML = '';
-  if (!parserState.files.length) { host.textContent = '먼저 파일을 선택하세요.'; return; }
-  const chunkSize = Number($('chunkSize').value);
-  const manifest = [];
-  for (const file of parserState.files) {
-    const text = await file.text();
-    const parsed = parseGaussian(text, file.name);
-    const chunks = makeAnalysisText(text, parsed, chunkSize);
-    const base = file.name.replace(/\.[^.]+$/, '');
-    manifest.push({ file: file.name, status: parsed.status, charge: parsed.charge, multiplicity: parsed.multiplicity, scf: parsed.scf, freeEnergy: parsed.freeEnergy, imaginary: parsed.imaginary, chunks: chunks.length });
-    const card = document.createElement('article');
-    card.className = 'output-card';
-    card.innerHTML = `<strong>${escapeHtml(file.name)}</strong><p>${escapeHtml(parsed.status)} · ${chunks.length}개 분석 청크 · 최종 SCF ${escapeHtml(parsed.scf || '-')}</p>`;
-    card.appendChild(downloadText(`${base}__summary.txt`, makeSummary(parsed)));
-    chunks.forEach((chunk, index) => card.appendChild(downloadText(`${base}__analysis_part_${String(index + 1).padStart(2, '0')}.txt`, `PART ${index + 1}/${chunks.length}\nSOURCE ${file.name}\n\n${chunk}`)));
-    host.appendChild(card);
-  }
-  const manifestCard = document.createElement('article');
-  manifestCard.className = 'output-card';
-  manifestCard.innerHTML = '<strong>전체 manifest</strong><p>여러 파일의 상태와 핵심 에너지를 한 번에 전달할 수 있습니다.</p>';
-  manifestCard.appendChild(downloadText('gaussian_analysis_manifest.json', JSON.stringify({ generatedAt: new Date().toISOString(), files: manifest }, null, 2)));
-  host.prepend(manifestCard);
-}
-
-async function runSi() {
-  const host = $('siOutputs');
-  host.innerHTML = '';
-  if (!siState.files.length) { host.textContent = '먼저 파일을 선택하세요.'; return; }
-  const records = [];
-  for (const file of siState.files) records.push(parseGaussian(await file.text(), file.name));
-  const title = $('siTitle').value.trim() || 'Computational Details and Cartesian Coordinates';
-  const table = ['File\tStatus\tCharge\tMultiplicity\tSCF Energy (Hartree)\tFree Energy (Hartree)\tImaginary Frequencies'];
-  const sections = [`${title}\n${'='.repeat(title.length)}\n`, 'Summary Table', '-------------'];
-  records.forEach((record) => table.push([record.name, record.status, record.charge, record.multiplicity, record.scf, record.freeEnergy, record.imaginary.join(', ') || 'none/not found'].join('\t')));
-  sections.push(table.join('\n'));
-  records.forEach((record, index) => {
-    sections.push(`\n\n${index + 1}. ${record.name}\n${'-'.repeat(Math.min(80, record.name.length + 4))}\nRoute: ${record.route || 'not found'}\nCharge = ${record.charge}, Multiplicity = ${record.multiplicity}\nElectronic Energy = ${record.scf || 'not found'} Hartree\nElectronic and Thermal Free Energy = ${record.freeEnergy || 'not found'} Hartree\nImaginary Frequencies = ${record.imaginary.join(', ') || 'none/not found'}\n\nCartesian Coordinates (Angstrom)\n${record.coordinates || 'not found'}`);
-  });
-  const documentText = sections.join('\n');
-  const card = document.createElement('article');
-  card.className = 'output-card';
-  card.innerHTML = `<strong>${escapeHtml(title)}</strong><p>${records.length}개 계산 파일을 SI 텍스트 초안으로 정리했습니다.</p>`;
-  card.appendChild(downloadText('SI_Generator_output.txt', documentText));
-  card.appendChild(downloadText('SI_energy_table.tsv', table.join('\n')));
-  const preview = document.createElement('pre');
-  preview.className = 'mono';
-  preview.textContent = documentText.slice(0, 8000);
-  card.appendChild(preview);
-  host.appendChild(card);
-}
-
-setupTabs();
-setupDrop('parserDrop', 'parserFiles', parserState, 'parserFileList');
-setupDrop('siDrop', 'siFiles', siState, 'siFileList');
-$('runParser').addEventListener('click', runParser);
-$('runSi').addEventListener('click', runSi);
-$('clearParser').addEventListener('click', () => { parserState.files = []; $('parserFileList').innerHTML = ''; $('parserOutputs').innerHTML = ''; $('parserFiles').value = ''; });
-$('clearSi').addEventListener('click', () => { siState.files = []; $('siFileList').innerHTML = ''; $('siOutputs').innerHTML = ''; $('siFiles').value = ''; });
+const $=id=>document.getElementById(id);const parserState={files:[]};const siState={files:[],records:[]};const HARTREE=627.509474;
+function esc(v){return String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}function fmtBytes(n){return n<1024?`${n} B`:n<1048576?`${(n/1024).toFixed(1)} KB`:`${(n/1048576).toFixed(1)} MB`}function all(text,re,g=1){return [...text.matchAll(re)].map(m=>m[g].trim())}function last(text,re,g=1){const m=[...text.matchAll(re)];return m.length?m.at(-1)[g].trim():''}
+function setupTabs(){document.querySelectorAll('.tool-tab').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tool-tab,.tool-panel').forEach(x=>x.classList.remove('active'));b.classList.add('active');$(b.dataset.target).classList.add('active')})}
+function setupDrop(dropId,inputId,state,listId,onChange){const d=$(dropId),i=$(inputId);const add=files=>{const incoming=[...files].filter(f=>/\.(out|log|txt)$/i.test(f.name));const map=new Map(state.files.map(f=>[`${f.name}:${f.size}`,f]));incoming.forEach(f=>map.set(`${f.name}:${f.size}`,f));state.files=[...map.values()];renderFiles(state.files,listId);onChange?.()};d.onclick=e=>{if(e.target!==i)i.click()};i.onchange=()=>add(i.files);['dragenter','dragover'].forEach(n=>d.addEventListener(n,e=>{e.preventDefault();d.classList.add('drag')}));['dragleave','drop'].forEach(n=>d.addEventListener(n,e=>{e.preventDefault();d.classList.remove('drag')}));d.addEventListener('drop',e=>add(e.dataTransfer.files));return add}
+function renderFiles(files,id){$(id).innerHTML=files.map(f=>`<div class="file-row"><strong>${esc(f.webkitRelativePath||f.name)}</strong><span> · ${fmtBytes(f.size)}</span></div>`).join('')}
+const symbols=['','H','He','Li','Be','B','C','N','O','F','Ne','Na','Mg','Al','Si','P','S','Cl','Ar','K','Ca','Sc','Ti','V','Cr','Mn','Fe','Co','Ni','Cu','Zn','Ga','Ge','As','Se','Br','Kr','Rb','Sr','Y','Zr','Nb','Mo','Tc','Ru','Rh','Pd','Ag','Cd','In','Sn','Sb','Te','I','Xe'];
+function route(text){const l=text.split(/\r?\n/),s=l.findIndex(x=>/^\s*#/.test(x));if(s<0)return'';const a=[];for(let i=s;i<Math.min(l.length,s+30);i++){if(i>s&&!l[i].trim())break;a.push(l[i].trim())}return a.join(' ')}
+function orientation(text){const ix=[...text.matchAll(/(?:Standard|Input) orientation:/g)].map(m=>m.index);if(!ix.length)return[];const lines=text.slice(ix.at(-1)).split(/\r?\n/);let d=0;const rows=[];for(const line of lines){if(/^\s*-{5,}/.test(line)){d++;if(d>=3&&rows.length)break;continue}if(d===2){const m=line.match(/^\s*(\d+)\s+(\d+)\s+\d+\s+(-?\d+\.\d+)\s+(-?\d+\.\d+)\s+(-?\d+\.\d+)/);if(m)rows.push({index:+m[1],atomicNumber:+m[2],symbol:symbols[+m[2]]||`X${m[2]}`,x:+m[3],y:+m[4],z:+m[5]})}}return rows}
+function spinDensity(text){const starts=[...text.matchAll(/Mulliken charges and spin densities:/gi)].map(m=>m.index);if(!starts.length)return[];const lines=text.slice(starts.at(-1)).split(/\r?\n/);const rows=[];for(const line of lines){const m=line.match(/^\s*(\d+)\s+([A-Za-z]{1,2})\s+[-+]?\d*\.\d+\s+([-+]?\d*\.\d+)/);if(m)rows.push({index:+m[1],symbol:m[2],spin:+m[3]});else if(rows.length&&/^\s*Sum of Mulliken/.test(line))break}return rows}
+function parse(text,name,path=''){const cm=text.match(/Charge\s*=\s*(-?\d+)\s+Multiplicity\s*=\s*(\d+)/i)||[];const scf=all(text,/SCF Done:\s+E\([^)]*\)\s*=\s*(-?\d+\.\d+)/g);const freqs=all(text,/Frequencies --\s+([^\n]+)/g).flatMap(x=>x.split(/\s+/).map(Number)).filter(Number.isFinite);const normal=(text.match(/Normal termination of Gaussian/g)||[]).length,error=(text.match(/Error termination/g)||[]).length;const r={name,path,structure:name.replace(/\.[^.]+$/,''),route:route(text),charge:cm[1]||'?',multiplicity:cm[2]||'?',status:error?'error':normal?'normal':'incomplete',electronic:num(scf.at(-1)),zpe:num(last(text,/Zero-point correction=\s*([+-]?\d+\.\d+)/g)),enthalpy:num(last(text,/Sum of electronic and thermal Enthalpies=\s*(-?\d+\.\d+)/g)),gibbs:num(last(text,/Sum of electronic and thermal Free Energies=\s*(-?\d+\.\d+)/g)),thermalEnergy:num(last(text,/Sum of electronic and thermal Energies=\s*(-?\d+\.\d+)/g)),imaginary:freqs.filter(x=>x<0),coords:orientation(text),spin:spinDensity(text),cpu:last(text,/Job cpu time:\s*([^\n]+)/g),elapsed:last(text,/Elapsed time:\s*([^\n]+)/g),link0:all(text,/^\s*%(?:chk|oldchk|mem|cpu|nprocshared)=.*$/gmi,0)};return r}function num(v){const n=Number(v);return Number.isFinite(n)?n:null}
+function coordText(r){return r.coords.map(a=>`${a.symbol.padEnd(3)}${a.x.toFixed(8).padStart(15)}${a.y.toFixed(8).padStart(15)}${a.z.toFixed(8).padStart(15)}`).join('\n')}
+function summary(r){return [`FILE: ${r.name}`,`STATUS: ${r.status}`,`ROUTE: ${r.route||'not found'}`,`CHARGE/MULTIPLICITY: ${r.charge} ${r.multiplicity}`,`ELECTRONIC: ${r.electronic??'not found'}`,`GIBBS: ${r.gibbs??'not found'}`,`ENTHALPY: ${r.enthalpy??'not found'}`,`ZPE CORRECTION: ${r.zpe??'not found'}`,`IMAGINARY: ${r.imaginary.join(', ')||'none/not found'}`,`CPU: ${r.cpu||'-'}`,`ELAPSED: ${r.elapsed||'-'}`,'','CARTESIAN COORDINATES:',coordText(r)||'not found'].join('\n')}
+function download(name,content,type='text/plain;charset=utf-8'){const b=new Blob([content],{type}),u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download=name;a.className='download-link';a.textContent=name;a.onclick=()=>setTimeout(()=>URL.revokeObjectURL(u),1000);return a}
+async function runParser(){const host=$('parserOutputs');host.innerHTML='';if(!parserState.files.length){host.textContent='먼저 파일을 선택하세요.';return}const size=+$('chunkSize').value,manifest=[];for(const f of parserState.files){const t=await f.text(),r=parse(t,f.name,f.webkitRelativePath),important=t.split(/\r?\n/).filter(x=>/SCF Done:|Optimization completed|Stationary point found|Frequencies --|thermal Free Energies=|Normal termination|Error termination|Convergence failure|IRC-IRC-IRC|Summary of Optimized Potential Surface Scan/i.test(x));const compact=`${summary(r)}\n\nIMPORTANT LOG CONTEXT\n${important.join('\n')}`,chunks=[];for(let i=0;i<compact.length;i+=size)chunks.push(compact.slice(i,i+size));manifest.push({file:f.name,status:r.status,charge:r.charge,multiplicity:r.multiplicity,electronic:r.electronic,gibbs:r.gibbs,imaginary:r.imaginary,chunks:chunks.length});const c=document.createElement('article');c.className='output-card';c.innerHTML=`<strong>${esc(f.name)}</strong><p>${r.status} · ${chunks.length}개 청크</p>`;c.append(download(`${r.structure}__summary.txt`,summary(r)));chunks.forEach((x,i)=>c.append(download(`${r.structure}__analysis_part_${String(i+1).padStart(2,'0')}.txt`,x)));host.append(c)}const c=document.createElement('article');c.className='output-card';c.innerHTML='<strong>manifest</strong>';c.append(download('gaussian_analysis_manifest.json',JSON.stringify({generatedAt:new Date().toISOString(),files:manifest},null,2),'application/json'));host.prepend(c)}
+async function parseSiFiles(){setStatus('파일 분석 중');siState.records=[];let i=0;for(const f of siState.files){siState.records.push(parse(await f.text(),f.name,f.webkitRelativePath));i++;progress(i/siState.files.length*35,'Gaussian 파일 분석')}renderStructureEditor();setStatus(`${siState.records.length}개 구조 준비`)}
+function renderStructureEditor(){const host=$('structureEditor');if(!siState.records.length){host.innerHTML='';return}host.innerHTML=`<table class="si-table"><thead><tr><th>사용</th><th>구조명</th><th>파일</th><th>Status</th><th>Multiplicity</th><th>Gibbs</th></tr></thead><tbody>${siState.records.map((r,i)=>`<tr><td><input type="checkbox" data-use="${i}" checked></td><td><input data-name="${i}" value="${esc(r.structure)}"></td><td>${esc(r.path||r.name)}</td><td>${r.status}</td><td>${r.multiplicity}</td><td>${r.gibbs??'-'}</td></tr>`).join('')}</tbody></table>`;host.querySelectorAll('[data-name]').forEach(x=>x.oninput=()=>{siState.records[+x.dataset.name].structure=x.value;updateReferenceOptions()});updateReferenceOptions()}
+function usedRecords(){return siState.records.filter((_,i)=>document.querySelector(`[data-use="${i}"]`)?.checked!==false)}function updateReferenceOptions(){const s=$('referenceStructure'),old=s.value;s.innerHTML=siState.records.map((r,i)=>`<option value="${i}">${esc(r.structure)}</option>`).join('');if([...s.options].some(o=>o.value===old))s.value=old}
+function energy(r,basis){if(basis==='electronic')return r.electronic;if(basis==='electronic-zpe')return r.electronic!=null&&r.zpe!=null?r.electronic+r.zpe:null;if(basis==='enthalpy')return r.enthalpy;if(basis==='gibbs')return r.gibbs;return r.gibbs??r.enthalpy??r.electronic}
+function parseManualTable(text){const lines=text.split(/\r?\n/).filter(x=>x.trim());const out=new Map();lines.forEach((line,i)=>{const p=line.split(/\t|\s{2,}/).map(x=>x.trim()).filter(Boolean);if(i===0&&/structure|name/i.test(p[0]))return;const v=Number(p.at(-1));if(p[0]&&Number.isFinite(v))out.set(p[0],v)});return out}
+function referenceHartree(records,basis){const mode=$('referenceMode').value;if(mode==='numeric')return num($('manualReference').value);if(mode==='separate'){let sum=0,ok=false;$('separateReactants').value.split('+').forEach(term=>{const [name,c='1']=term.trim().split('*');const r=records.find(x=>x.structure===name?.trim());const e=r&&energy(r,basis);if(e!=null){sum+=e*(Number(c)||1);ok=true}});return ok?sum:null}const idx=+$('referenceStructure').value;return energy(siState.records[idx]||records[0],basis)}
+function distance(a,b){return Math.hypot(a.x-b.x,a.y-b.y,a.z-b.z)}function angle(a,b,c){const u=[a.x-b.x,a.y-b.y,a.z-b.z],v=[c.x-b.x,c.y-b.y,c.z-b.z],dot=u.reduce((s,x,i)=>s+x*v[i],0),nu=Math.hypot(...u),nv=Math.hypot(...v);return Math.acos(Math.max(-1,Math.min(1,dot/(nu*nv))))*180/Math.PI}function cross(a,b){return[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]]}function dihedral(a,b,c,d){const b0=[a.x-b.x,a.y-b.y,a.z-b.z],b1=[c.x-b.x,c.y-b.y,c.z-b.z],b2=[d.x-c.x,d.y-c.y,d.z-c.z],n1=Math.hypot(...b1),u=b1.map(x=>x/n1),v=b0.map((x,i)=>x-u[i]*b0.reduce((s,y,j)=>s+y*u[j],0)),w=b2.map((x,i)=>x-u[i]*b2.reduce((s,y,j)=>s+y*u[j],0));return Math.atan2(cross(u,v).reduce((s,x,i)=>s+x*w[i],0),v.reduce((s,x,i)=>s+x*w[i],0))*180/Math.PI}
+function geometryRules(){return $('geometryRules').value.split(/\r?\n/).map(x=>x.trim()).filter(Boolean).map(line=>{const [name,ids]=line.split('=');return{name:(name||'Geometry').trim(),ids:(ids||'').split(/[ ,]+/).map(Number).filter(Number.isFinite)}}).filter(x=>x.ids.length>=2&&x.ids.length<=4)}function geometryValue(r,ids){const a=ids.map(id=>r.coords.find(x=>x.index===id));if(a.some(x=>!x))return null;if(ids.length===2)return distance(...a);if(ids.length===3)return angle(...a);return dihedral(...a)}
+function spinSelection(records){if(!$('spinAuto').checked)return $('spinManualIds').value.split(/[ ,]+/).map(Number).filter(Number.isFinite);const count=Math.max(1,+$('spinAutoCount').value||6),score=new Map();records.forEach(r=>r.spin.forEach(x=>score.set(x.index,(score.get(x.index)||0)+Math.abs(x.spin))));return [...score].sort((a,b)=>b[1]-a[1]).slice(0,count).map(x=>x[0])}
+function markupHtml(s){return esc(s).replace(/_\{([^}]+)\}/g,'<sub>$1</sub>').replace(/\^\{([^}]+)\}/g,'<sup>$1</sup>')}function tableHtml(headers,rows){return `<table border="1" cellspacing="0" cellpadding="5"><tr>${headers.map(x=>`<th>${x}</th>`).join('')}</tr>${rows.map(r=>`<tr>${r.map(x=>`<td>${x??''}</td>`).join('')}</tr>`).join('')}</table>`}
+function buildPackage(kind='both'){const records=usedRecords();if(!records.length)throw new Error('사용할 구조가 없습니다.');const basis=$('energyBasis').value,inputMode=$('energyInputMode').value,manualAbs=parseManualTable($('manualAbsolute').value),manualRel=parseManualTable($('manualRelative').value),ref=referenceHartree(records,basis),spinIds=spinSelection(records),rules=geometryRules(),prefix=$('outputPrefix').value.trim()||'SI_Generator';const energies=records.map(r=>{const e=inputMode==='manual-both'?(manualAbs.get(r.structure)??energy(r,basis)):energy(r,basis);let rel=inputMode==='manual-relative'||$('referenceMode').value==='manual-relative'?manualRel.get(r.structure):e!=null&&ref!=null?(e-ref)*HARTREE:null;return{r,e,rel}});const energyRows=energies.map(x=>[markupHtml(x.r.structure),x.e?.toFixed(9)??'',x.rel?.toFixed(2)??'']);const spinRows=records.map(r=>[markupHtml(r.structure),...spinIds.map(id=>r.spin.find(x=>x.index===id)?.spin?.toFixed(3)??'')]);const geomRows=records.map(r=>[markupHtml(r.structure),...rules.map(g=>{const v=geometryValue(r,g.ids);return v==null?'':v.toFixed(3)})]);const captions=$('figureCaptions').value.split(/\r?\n/).filter(x=>x.trim());const title=$('siTitle').value.trim()||'Supporting Information';let body=`<h1>${markupHtml(title)}</h1><p>Generated by Sera SI Generator · ${new Date().toLocaleString('ko-KR')}</p>`;if(kind!=='xyz'){body+=`<h2>Computational Summary</h2>${tableHtml(['Structure','Status','Charge','Multiplicity','Route'],records.map(r=>[markupHtml(r.structure),r.status,r.charge,r.multiplicity,esc(r.route)]))}`;if($('includeAbsolute').checked||inputMode!=='manual-relative')body+=`<h2>Energy Table</h2>${tableHtml(['Structure',`${basis} (Hartree)`,'Relative (kcal mol−1)'],energyRows)}`;if(spinIds.length)body+=`<h2>Mulliken Spin Density</h2>${tableHtml(['Structure',...spinIds.map(id=>`Atom ${id}`)],spinRows)}`;if(rules.length)body+=`<h2>Selected Geometries</h2>${tableHtml(['Structure',...rules.map(g=>`${esc(g.name)} (${g.ids.length===2?'Å':'°'})`)],geomRows)}`;captions.forEach((c,i)=>body+=`<p><b>Figure S${i+1}.</b> ${markupHtml(c)}</p>`)}if(kind!=='si'&&$('includeCoordinates').checked){body+='<h2>Cartesian Coordinates</h2>';records.forEach(r=>body+=`<h3>${markupHtml(r.structure)}</h3><pre>${esc(coordText(r))}</pre>`)}const html=`<!doctype html><html><head><meta charset="utf-8"><style>body{font-family:'Times New Roman';font-size:11pt}table{border-collapse:collapse;width:100%;margin:8px 0}th,td{border:1px solid #000;padding:4px}pre{font-family:Consolas;font-size:9pt;page-break-after:always}</style></head><body>${body}</body></html>`;const xyz=records.map(r=>`${r.coords.length}\n${r.structure} charge=${r.charge} multiplicity=${r.multiplicity}\n${coordText(r)}`).join('\n');const tsv=['Structure\tEnergy(Hartree)\tRelative(kcal/mol)',...energies.map(x=>`${x.r.structure}\t${x.e??''}\t${x.rel??''}`)].join('\n');const spinReport=['Spin Pathway Analysis',`Tracked atoms: ${spinIds.join(', ')}`, ...records.map(r=>`\n${r.structure}\n${spinIds.map(id=>{const s=r.spin.find(x=>x.index===id);return `Atom ${id}\t${s?.symbol||''}\t${s?.spin??''}`}).join('\n')}`)].join('\n');return{prefix,html,xyz,tsv,spinReport,json:JSON.stringify({settings:collectSettings(),records:records.map(r=>({name:r.name,structure:r.structure,status:r.status,charge:r.charge,multiplicity:r.multiplicity,electronic:r.electronic,gibbs:r.gibbs,imaginary:r.imaginary}))},null,2),records,energies,spinIds,rules}}
+function collectSettings(){const ids=['siTitle','mechanismPhrase','outputPrefix','includeAbsolute','includeCoordinates','energyInputMode','energyBasis','referenceMode','referenceStructure','manualReference','separateReactants','manualAbsolute','manualRelative','spinAuto','spinAutoCount','spinManualIds','spinSeparateReport','geometryRules','figureCaptions'];return Object.fromEntries(ids.map(id=>{const e=$(id);return[id,e.type==='checkbox'?e.checked:e.value]}))}function applySettings(s){Object.entries(s||{}).forEach(([id,v])=>{const e=$(id);if(!e)return;if(e.type==='checkbox')e.checked=!!v;else e.value=v});syncControlStates()}
+function renderPackage(pkg,kind){const host=$('siOutputs'),c=document.createElement('article');c.className='output-card';c.innerHTML=`<strong>${esc(pkg.prefix)}</strong><p>${pkg.records.length}개 구조 · ${pkg.spinIds.length}개 spin atom · ${pkg.rules.length}개 geometry rule</p>`;if(kind!=='xyz'){c.append(download(`${pkg.prefix}_SI.doc`,pkg.html,'application/msword'));c.append(download(`${pkg.prefix}_energy_table.tsv`,pkg.tsv))}if(kind!=='si'){c.append(download(`${pkg.prefix}_XYZ.xyz`,pkg.xyz,'chemical/x-xyz'))}if($('spinSeparateReport').checked&&pkg.spinIds.length)c.append(download(`${pkg.prefix}_spin_analysis.txt`,pkg.spinReport));c.append(download(`${pkg.prefix}_project.json`,pkg.json,'application/json'));const d=document.createElement('details');d.innerHTML='<summary>미리보기</summary><div class="mono"></div>';d.querySelector('div').textContent=pkg.html.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').slice(0,5000);c.append(d);host.prepend(c)}
+async function generate(kind){$('siOutputs').innerHTML='';if(!siState.files.length){$('siOutputs').textContent='먼저 Gaussian 파일을 선택하세요.';return}showProgress(true);try{if(!siState.records.length)await parseSiFiles();progress(55,'에너지·스핀·기하구조 계산');const pkg=buildPackage(kind);progress(90,'출력 패키지 구성');renderPackage(pkg,kind);progress(100,'완료');setStatus('SI 패키지 생성 완료')}catch(e){$('siOutputs').textContent=`오류: ${e.message}`;setStatus('생성 실패')}setTimeout(()=>showProgress(false),900)}
+function progress(v,t){$('siProgressBar').value=v;$('siProgressPct').textContent=`${Math.round(v)}%`;$('siProgressText').textContent=t}function showProgress(v){$('siProgress').hidden=!v}function setStatus(t){$('seraStatus').textContent=t}function syncControlStates(){const manual=$('energyInputMode').value;$('manualAbsolute').disabled=manual!=='manual-both';$('manualRelative').disabled=manual==='auto';$('spinManualIds').disabled=$('spinAuto').checked;$('spinAutoCount').disabled=!$('spinAuto').checked}
+function saveProject(){const data={version:2,settings:collectSettings(),structures:siState.records.map(r=>({name:r.name,structure:r.structure,path:r.path}))};document.body.append(download('Sera_SI_Project.json',JSON.stringify(data,null,2),'application/json')).click();document.body.lastChild.remove()}async function loadProject(file){const data=JSON.parse(await file.text());applySettings(data.settings);(data.structures||[]).forEach((x,i)=>{if(siState.records[i])siState.records[i].structure=x.structure||siState.records[i].structure});renderStructureEditor();setStatus('설정 불러옴')}
+function autoSort(){siState.records.sort((a,b)=>a.structure.localeCompare(b.structure,undefined,{numeric:true}));renderStructureEditor();setStatus('구조명 순 정렬')}
+function init(){setupTabs();setupDrop('parserDrop','parserFiles',parserState,'parserFileList');setupDrop('siDrop','siFiles',siState,'siFileList',()=>{siState.records=[];setStatus(`${siState.files.length}개 파일 선택`)});$('siFolder').onchange=()=>{const map=new Map(siState.files.map(f=>[`${f.name}:${f.size}`,f]));[...$('siFolder').files].filter(f=>/\.(out|log|txt)$/i.test(f.name)).forEach(f=>map.set(`${f.name}:${f.size}`,f));siState.files=[...map.values()];siState.records=[];renderFiles(siState.files,'siFileList');setStatus(`${siState.files.length}개 파일 선택`)};$('chooseSiFiles').onclick=()=>$('siFiles').click();$('runParser').onclick=runParser;$('clearParser').onclick=()=>{parserState.files=[];renderFiles([],'parserFileList');$('parserOutputs').innerHTML=''};$('clearSi').onclick=()=>{siState.files=[];siState.records=[];renderFiles([],'siFileList');$('structureEditor').innerHTML='';$('siOutputs').innerHTML='';setStatus('파일 대기')};$('autoGroupBtn').onclick=async()=>{if(!siState.records.length)await parseSiFiles();autoSort()};$('runSi').onclick=()=>generate('both');$('generateSiOnly').onclick=()=>generate('si');$('generateXyzOnly').onclick=()=>generate('xyz');$('saveProjectBtn').onclick=saveProject;$('loadProjectInput').onchange=()=>loadProject($('loadProjectInput').files[0]);$('energyInputMode').onchange=syncControlStates;$('spinAuto').onchange=syncControlStates;$('siTitle').oninput=()=>{$('formatPreview').innerHTML=markupHtml($('siTitle').value||'Fe_{2}^{III}')};syncControlStates()}document.addEventListener('DOMContentLoaded',init);
