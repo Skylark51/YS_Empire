@@ -40,13 +40,13 @@
     sync.textContent = message;
   }
 
-  async function agentFetch(path, timeoutMs = 6000) {
+  async function fetchStatus(timeoutMs = 6000) {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
     try {
       const headers = { Accept: 'application/json' };
       if (state.token) headers.Authorization = `Bearer ${state.token}`;
-      const response = await fetch(`${state.endpoint}${path}`, { headers, signal: controller.signal, cache: 'no-store' });
+      const response = await fetch(`${state.endpoint}/api/status`, { headers, signal: controller.signal, cache: 'no-store' });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       return await response.json();
     } finally {
@@ -62,23 +62,36 @@
     return null;
   }
 
+  function legacyStatusForNode(node, fallback = 'waiting') {
+    const raw = String(node.state || node.status || '').toLowerCase();
+    const job = node.job && typeof node.job === 'object' ? node.job : {};
+    if (job.error_termination === true || ['failed', 'error', 'warning'].includes(raw)) return 'warning';
+    if (job.normal_termination === true || ['done', 'finished', 'completed'].includes(raw)) return 'done';
+    if (['running', 'high_load', 'high-load', 'busy'].includes(raw)) return 'running';
+    if (['idle', 'waiting', 'offline', 'unknown', 'busy_other'].includes(raw)) return 'waiting';
+    return ['waiting', 'running', 'warning', 'done'].includes(fallback) ? fallback : 'waiting';
+  }
+
   function applySnapshot(snapshot) {
     const nodes = Array.isArray(snapshot.nodes) ? snapshot.nodes : [];
     for (const node of nodes) {
       const server = findServer(node.id || node.host);
       if (!server) continue;
       Object.assign(server, {
-        status: node.status || server.status,
+        status: legacyStatusForNode(node, server.status),
         progress: Number.isFinite(node.progress) ? node.progress : server.progress,
-        job: node.job || '할당된 계산 없음',
-        directory: node.directory || server.directory,
-        started: node.started || '-',
-        eta: node.eta || (node.status === 'running' ? '계산 중' : '-'),
-        cpu: node.cpu || server.cpu,
-        memory: node.memory || server.memory,
+        job: typeof node.job === 'string' ? node.job : (node.job?.output_file || node.job?.input_file || server.job || '할당된 계산 없음'),
+        directory: node.job?.working_directory || node.working_directory || node.directory || server.directory,
+        started: node.job?.started_at || node.started_at || node.started || '-',
+        eta: node.eta || (['running', 'high_load', 'high-load'].includes(node.state || node.status) ? '계산 중' : '-'),
+        cpu: node.metrics?.cpu_percent != null ? `${node.metrics.cpu_percent}%` : (node.cpu || server.cpu),
+        memory: node.metrics?.memory_percent != null ? `${node.metrics.memory_percent}%` : (node.memory || server.memory),
         project: node.project || server.project,
         purpose: node.purpose || server.purpose,
         live: true,
+        monitorManaged: true,
+        liveNode: node,
+        liveStatus: node.state || node.status || 'unknown',
         checkedAt: node.checked_at || snapshot.generated_at,
         load1: node.load1 ?? '-',
         pid: node.pid || '-',
@@ -91,13 +104,14 @@
     if (selectedServerId) selectServer(selectedServerId);
     applyFilters();
     setConnectionUi('online', `최근 동기화 ${formatTime(state.lastSync)}`);
+    document.dispatchEvent(new CustomEvent('ys:status-snapshot', { detail: { snapshot, nodes } }));
   }
 
   async function refreshLive({ quiet = false } = {}) {
     if (!state.endpoint) return;
     if (!quiet) setConnectionUi('connecting', 'Agent 응답을 기다리는 중');
     try {
-      const snapshot = await agentFetch('/api/status');
+      const snapshot = await fetchStatus();
       applySnapshot(snapshot);
       if (!quiet) addLog('Lion Agent', `${snapshot.nodes?.length || 0}개 노드 상태를 동기화했습니다.`);
       return true;
@@ -170,9 +184,9 @@
     result.className = 'connection-test-result neutral';
     result.textContent = '연결을 확인하는 중입니다.';
     try {
-      const health = await agentFetch('/api/health');
+      const snapshot = await fetchStatus();
       result.className = 'connection-test-result success';
-      result.textContent = `연결 성공 · ${health.service || 'YS Lion Agent'} · ${health.version || ''}`;
+      result.textContent = `연결 성공 · ${snapshot.nodes?.length || 0}개 노드 · /api/status`;
       return true;
     } catch (error) {
       result.className = 'connection-test-result error';

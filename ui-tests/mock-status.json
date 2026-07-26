@@ -1,0 +1,11 @@
+{
+  "generated_at": "2026-07-26T12:00:00+09:00",
+  "nodes": [
+    { "id": "lion28", "state": "idle", "reachable": true, "job": { "detected": false } },
+    { "id": "lion29", "state": "running", "reachable": true, "metrics": { "cpu_percent": 42, "memory_percent": 38, "load_1": 5.1, "load_5": 4.8, "load_15": 4.2 }, "job": { "detected": true, "input_file": "scan.gjf", "output_file": "scan.out", "working_directory": "/home/skylark/scan", "started_at": "2026-07-26T10:00:00+09:00", "elapsed_seconds": 7200 } },
+    { "id": "lion30", "state": "running", "reachable": true, "metrics": { "cpu_percent": 96, "memory_percent": 81, "load_1": 15.4 }, "job": { "detected": true }, "memo": "TS 확인" },
+    { "id": "lion38", "state": "finished", "reachable": true, "job": { "detected": true, "normal_termination": true } },
+    { "id": "lion39", "state": "failed", "reachable": true, "job": { "detected": true, "error_termination": true } },
+    { "id": "lion40", "state": "offline", "reachable": false, "job": { "detected": false } }
+  ]
+}
