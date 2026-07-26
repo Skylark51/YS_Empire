@@ -21,6 +21,9 @@ def compatible_node(*, node: dict[str, Any], online: bool, state: str,
                 else "할당된 계산 없음" if state == "idle" else "서버 연결 확인 필요")
     return {
         "id": node["id"], "ssh_alias": node["ssh_alias"], "online": online,
+        "institution": node.get("institution", "jbnu"),
+        "pool": node.get("pool"), "node_type": node.get("node_type"),
+        "borrowable": bool(node.get("borrowable", False)),
         "state": state, "system": system, "gaussian": gaussian,
         "checked_at": checked_at, "latency_ms": latency_ms, "error": error,
         "host": node["ssh_alias"], "status": ui_status,

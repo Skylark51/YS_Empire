@@ -4,24 +4,70 @@
   "api_token": "CHANGE_ME_TO_A_LONG_RANDOM_TOKEN",
   "collect_interval_seconds": 10,
   "ssh_timeout_seconds": 7,
-  "connection_mode": "gateway_shell",
-  "gateway": "lion.jbnu.ac.kr",
   "allowed_origins": [
     "https://skylark51.github.io",
     "http://127.0.0.1:8000",
     "http://localhost:8000"
   ],
   "nodes": [
-    { "id": "lion28", "ssh_alias": "lion28", "default_directory": "/home/skylark" },
-    { "id": "lion29", "ssh_alias": "lion29", "default_directory": "/home/skylark" },
-    { "id": "lion30", "ssh_alias": "lion30", "default_directory": "/home/skylark" },
-    { "id": "lion38", "ssh_alias": "lion38", "default_directory": "/home/skylark" },
-    { "id": "lion39", "ssh_alias": "lion39", "default_directory": "/home/skylark" },
-    { "id": "lion40", "ssh_alias": "lion40", "default_directory": "/home/skylark" },
-    { "id": "lion48", "ssh_alias": "lion48", "default_directory": "/home/skylark" },
-    { "id": "lion49", "ssh_alias": "lion49", "default_directory": "/home/skylark" },
-    { "id": "lion50", "ssh_alias": "lion50", "default_directory": "/home/skylark" },
-    { "id": "lion51", "ssh_alias": "lion51", "default_directory": "/home/skylark" },
-    { "id": "tlion3", "ssh_alias": "tlion3", "default_directory": "/home/skylark" }
-  ]
+    {
+      "id": "lion28",
+      "ssh_alias": "lion28",
+      "default_directory": "/home/skylark"
+    },
+    {
+      "id": "lion29",
+      "ssh_alias": "lion29",
+      "default_directory": "/home/skylark"
+    },
+    {
+      "id": "lion30",
+      "ssh_alias": "lion30",
+      "default_directory": "/home/skylark"
+    },
+    {
+      "id": "lion38",
+      "ssh_alias": "lion38",
+      "default_directory": "/home/skylark"
+    },
+    {
+      "id": "lion39",
+      "ssh_alias": "lion39",
+      "default_directory": "/home/skylark"
+    },
+    {
+      "id": "lion40",
+      "ssh_alias": "lion40",
+      "default_directory": "/home/skylark"
+    },
+    {
+      "id": "lion48",
+      "ssh_alias": "lion48",
+      "default_directory": "/home/skylark"
+    },
+    {
+      "id": "lion49",
+      "ssh_alias": "lion49",
+      "default_directory": "/home/skylark"
+    },
+    {
+      "id": "lion50",
+      "ssh_alias": "lion50",
+      "default_directory": "/home/skylark"
+    },
+    {
+      "id": "lion51",
+      "ssh_alias": "lion51",
+      "default_directory": "/home/skylark"
+    },
+    {
+      "id": "tlion3",
+      "ssh_alias": "tlion3",
+      "default_directory": "/home/skylark"
+    }
+  ],
+  "connection_mode": "gateway_shell",
+  "gateway": "lion.jbnu.ac.kr",
+  "include_jbnu_pool": true,
+  "exclude_node_ids": []
 }

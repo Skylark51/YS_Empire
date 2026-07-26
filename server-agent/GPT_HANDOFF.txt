@@ -1,0 +1,42 @@
+영섭랜드 YS_Empire 백엔드 수정사항 전달용 요약
+
+1. 작업 범위
+- 수정 영역: server-agent 전용
+- 프런트 파일은 수정하지 않음
+- 실제 config.json과 접근 토큰은 수정하거나 커밋하지 않음
+
+2. JBNU Lion 확장
+- 자동 수집 대상: 총 47대
+- 직속 자원: lion28, 29, 30, 38, 39, 40, 48, 49, 50, 51, tlion3
+- 타 부서 Lion: lion4, 5, 7, 9, 14~23 일부, 25~27, 31~37, 41~47, 52, 53
+- 고성능 지원: tlion1, tlion2, tlion4
+- 제외: glion1, glion2, 이화여대, UNIST
+- config.json을 덮어쓰지 않고 node_inventory.py가 기존 설정에 자동 병합함
+- exclude_node_ids 설정으로 특정 노드를 제외할 수 있음
+
+3. 메모 API
+- GET /api/notes: 전체 메모 조회
+- PUT /api/notes/{node_id}: JSON {\"text\": \"메모\"} 저장 또는 덮어쓰기
+- DELETE /api/notes/{node_id}: 메모 삭제
+- 모든 요청은 기존 Bearer 접근 토큰 필요
+- 설정에 등록된 노드 ID만 저장 가능
+- 최대 4,000자, JSON 요청 최대 16 KiB
+- data/notes.json에 원자적으로 영구 저장
+- /api/status 각 노드에 note 객체와 UI 호환 memo 문자열을 함께 반환
+
+4. 실제 검증 결과
+- 47대 수집 완료
+- online 46, offline 1, running 16, idle 30, failed 0
+- lion4만 Gateway known_hosts 미등록으로 Host key verification failed
+- 보안 우회 옵션은 사용하지 않음
+- 타 부서에서 실행 중인 Gaussian 계산도 자동 탐지됨
+
+5. 테스트
+- Python 단위/API 테스트 15개 통과
+- 메모 인증, 저장, 조회, 즉시 상태 반영, 삭제, 잘못된 요청 방어 검증
+- 인벤토리 47개, 중복 없음, GPU/외부기관 제외 검증
+
+6. 실행
+- server-agent/run_agent.bat 또는 py gateway_agent.py
+- agent.py를 직접 실행하지 말 것
+- 연결 경로: Windows -> lion.jbnu.ac.kr -> 각 lion/tlion 노드

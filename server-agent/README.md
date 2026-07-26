@@ -177,3 +177,27 @@ py -m py_compile agent.py collector.py node_collector.py storage.py gateway_agen
 ```
 
 테스트는 상태 파싱, 종료 판정, null 계약, 읽기 전용 스크립트, 이력 중복 방지, 노드 장애 격리를 확인합니다.
+
+
+## JBNU full-pool expansion
+
+The agent automatically merges the local config with the canonical JBNU CPU inventory when
+include_jbnu_pool is true (the default). It monitors 47 nodes: 43 lion CPU nodes and
+tlion1 through tlion4. glion1, glion2, Ewha, and UNIST are not added. Set
+exclude_node_ids in config.json only when a specific JBNU node must be skipped.
+The existing config.json is never rewritten.
+
+Every /api/status node includes pool (owned, borrowed, or hpc_support),
+node_type, and borrowable metadata.
+
+## Notes API
+
+All note endpoints require the same Bearer token as /api/status.
+
+- GET /api/notes returns all persisted notes.
+- PUT /api/notes/{node_id} with {"text":"..."} creates or replaces a note.
+- DELETE /api/notes/{node_id} removes a note.
+- /api/status includes both the structured note object and UI-compatible memo string.
+
+Only configured node IDs are accepted. Notes are limited to 4,000 characters and are
+stored atomically in data/notes.json.

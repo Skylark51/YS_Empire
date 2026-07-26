@@ -59,6 +59,35 @@ class JsonStore:
         notes = payload.get("notes", {}) if isinstance(payload, dict) else {}
         return notes if isinstance(notes, dict) else {}
 
+    def set_note(self, node_id: str, text: str) -> dict[str, Any]:
+        with self.lock:
+            payload = self.read("notes")
+            notes = payload.get("notes", {})
+            if not isinstance(notes, dict):
+                notes = {}
+            note = {"text": text, "updated_at": iso_now()}
+            notes[node_id] = note
+            self._write(self.paths["notes"], {
+                "schema_version": "1.0",
+                "updated_at": note["updated_at"],
+                "notes": notes,
+            })
+            return note
+
+    def delete_note(self, node_id: str) -> bool:
+        with self.lock:
+            payload = self.read("notes")
+            notes = payload.get("notes", {})
+            if not isinstance(notes, dict):
+                notes = {}
+            deleted = notes.pop(node_id, None) is not None
+            self._write(self.paths["notes"], {
+                "schema_version": "1.0",
+                "updated_at": iso_now(),
+                "notes": notes,
+            })
+            return deleted
+
     def append_history(self, event: dict[str, Any]) -> bool:
         """Append once; returns False when the event key is already recorded."""
         with self.lock:
