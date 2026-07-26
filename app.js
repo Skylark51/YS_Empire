@@ -391,7 +391,7 @@ function simulateProgress() {
 
   departments.forEach(department => {
     department.servers.forEach(server => {
-      if (server.status === "running" && server.progress < 100) {
+      if (!server.monitorManaged && server.status === "running" && server.progress < 100) {
         server.progress = Math.min(100, server.progress + 0.2 * simulationSpeed);
         if (server.progress >= 100) {
           server.progress = 100;

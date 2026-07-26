@@ -1,10 +1,13 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="ko" data-theme="dark">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="dark light" />
   <title>영섭랜드 · 계산 왕국 경영실</title>
   <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="live.css" />
+  <link rel="stylesheet" href="game-ui.css" />
 </head>
 <body>
   <div class="app-shell">
@@ -12,16 +15,30 @@
       <div class="brand">
         <div class="brand-mark">YS</div>
         <div>
-          <h1>영섭랜드 계산 왕국 <small>v1.01</small></h1>
+          <h1>영섭랜드 계산 왕국 <small>v1.02</small></h1>
           <p>사람 · 서버 · AI가 함께 움직이는 연구 경영 시뮬레이션</p>
         </div>
       </div>
 
+      <div class="connection-cluster" aria-label="실시간 연결 상태">
+        <button id="connectionBtn" class="connection-button" type="button">
+          <span id="connectionDot" class="connection-dot offline"></span>
+          <span>
+            <strong id="connectionLabel">샘플 데이터</strong>
+            <small id="lastSyncLabel">Lion Agent 미연결</small>
+          </span>
+        </button>
+        <button id="refreshLiveBtn" class="icon-action" type="button" title="실시간 상태 새로고침" aria-label="실시간 상태 새로고침">↻</button>
+        <button id="themeToggleBtn" class="icon-action" type="button" title="라이트/다크 모드 전환" aria-label="라이트/다크 모드 전환">☾</button>
+      </div>
+
       <div class="top-actions">
-        <button id="pauseBtn" class="btn secondary">전체 모니터링 일시정지</button>
-        <button data-speed="1" class="speed-btn active">1×</button>
-        <button data-speed="2" class="speed-btn">2×</button>
-        <button data-speed="4" class="speed-btn">4×</button>
+        <button id="pauseBtn" class="btn secondary">샘플 진행 일시정지</button>
+        <div class="speed-group" aria-label="샘플 진행 속도">
+          <button data-speed="1" class="speed-btn active">1×</button>
+          <button data-speed="2" class="speed-btn">2×</button>
+          <button data-speed="4" class="speed-btn">4×</button>
+        </div>
         <button id="addTaskBtn" class="btn primary">+ 새 계산 등록</button>
       </div>
 
@@ -48,6 +65,21 @@
           </div>
         </div>
 
+        <div class="command-toolbar" aria-label="서버 검색 및 필터">
+          <label class="search-box">
+            <span>⌕</span>
+            <input id="serverSearchInput" type="search" placeholder="서버, 직원, 계산 파일, 프로젝트 검색" autocomplete="off" />
+          </label>
+          <div id="filterButtons" class="filter-buttons">
+            <button class="filter-btn active" data-filter="all">전체</button>
+            <button class="filter-btn" data-filter="owned">내 서버</button>
+            <button class="filter-btn" data-filter="running">계산중</button>
+            <button class="filter-btn" data-filter="waiting">대기</button>
+            <button class="filter-btn" data-filter="warning">확인필요</button>
+          </div>
+          <span id="visibleServerCount" class="visible-count">0대 표시</span>
+        </div>
+
         <div class="executive-row">
           <article class="executive-card pixel-panel">
             <div class="boss-scene">
@@ -66,7 +98,6 @@
         </div>
 
         <div class="connector trunk"></div>
-
         <div id="departmentGrid" class="department-grid"></div>
       </section>
 
@@ -85,6 +116,12 @@
           </div>
 
           <div id="detailContent" class="detail-content hidden">
+            <div class="live-summary">
+              <div><span>최근 확인</span><strong id="detailCheckedAt">-</strong></div>
+              <div><span>1분 Load</span><strong id="detailLoad">-</strong></div>
+              <div><span>Gaussian PID</span><strong id="detailPid">-</strong></div>
+            </div>
+
             <div class="info-grid">
               <div><span>기관</span><strong id="detailInstitution">-</strong></div>
               <div><span>접속명</span><strong id="detailHost">-</strong></div>
@@ -111,9 +148,10 @@
               <div><dt>작업 디렉터리</dt><dd id="detailDirectory">-</dd></div>
             </dl>
 
-            <div class="detail-actions">
+            <div class="detail-actions three">
+              <button id="copySshBtn" class="btn secondary full">SSH 명령 복사</button>
               <button id="markDoneBtn" class="btn secondary full">완료 처리</button>
-              <button id="needsReviewBtn" class="btn danger full">검수 필요 표시</button>
+              <button id="needsReviewBtn" class="btn danger full">검수 필요</button>
             </div>
           </div>
         </section>
@@ -140,6 +178,52 @@
     </footer>
   </div>
 
+  <dialog id="connectionDialog" class="connection-dialog">
+    <form id="connectionForm" method="dialog">
+      <div class="dialog-header">
+        <div>
+          <span class="eyebrow">LION LIVE BRIDGE</span>
+          <h2>Lion Agent 연결</h2>
+        </div>
+        <button type="button" id="closeConnectionDialogBtn" class="icon-btn">×</button>
+      </div>
+
+      <div class="connection-guide">
+        <strong>브라우저가 Lion에 직접 로그인하지 않습니다.</strong>
+        <p>내 컴퓨터에서 <code>server-agent/agent.py</code>를 실행하면 Agent가 SSH 키로 노드를 읽고, 이 화면에는 상태 JSON만 전달합니다.</p>
+      </div>
+
+      <label>
+        Agent 주소
+        <input id="agentEndpointInput" type="url" required value="http://127.0.0.1:8765" />
+      </label>
+      <label>
+        접근 토큰
+        <input id="agentTokenInput" type="password" autocomplete="off" placeholder="config.json의 api_token" />
+        <small>토큰은 현재 브라우저 탭의 sessionStorage에만 저장됩니다.</small>
+      </label>
+      <label>
+        자동 갱신
+        <select id="pollIntervalInput">
+          <option value="5000">5초</option>
+          <option value="10000" selected>10초</option>
+          <option value="30000">30초</option>
+          <option value="0">수동 갱신</option>
+        </select>
+      </label>
+
+      <div id="connectionTestResult" class="connection-test-result neutral">Agent를 실행한 뒤 연결 테스트를 누르세요.</div>
+
+      <div class="dialog-actions spread">
+        <button type="button" id="disconnectAgentBtn" class="btn danger">연결 해제</button>
+        <div>
+          <button type="button" id="testAgentBtn" class="btn secondary">연결 테스트</button>
+          <button type="submit" class="btn primary">저장하고 연결</button>
+        </div>
+      </div>
+    </form>
+  </dialog>
+
   <dialog id="taskDialog">
     <form id="taskForm" method="dialog">
       <div class="dialog-header">
@@ -154,12 +238,10 @@
         작업명
         <input id="taskTitleInput" required placeholder="예: FeNO7 quartet Fe–N scan" />
       </label>
-
       <label>
         프로젝트
         <input id="taskProjectInput" required placeholder="예: FeNO6 / FeNO7" />
       </label>
-
       <label>
         우선순위
         <select id="taskPriorityInput">
@@ -168,7 +250,6 @@
           <option value="low">낮음</option>
         </select>
       </label>
-
       <label>
         담당 서버
         <select id="taskServerInput"></select>
@@ -182,5 +263,7 @@
   </dialog>
 
   <script src="app.js"></script>
+  <script src="live.js"></script>
+  <script src="game-ui.js"></script>
 </body>
 </html>

@@ -3,7 +3,9 @@
   "listen_port": 8765,
   "api_token": "CHANGE_ME_TO_A_LONG_RANDOM_TOKEN",
   "collect_interval_seconds": 10,
-  "ssh_timeout_seconds": 5,
+  "ssh_timeout_seconds": 7,
+  "connection_mode": "gateway_shell",
+  "gateway": "lion.jbnu.ac.kr",
   "allowed_origins": [
     "https://skylark51.github.io",
     "http://127.0.0.1:8000",
