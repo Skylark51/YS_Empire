@@ -1,14 +1,24 @@
 @echo off
-chcp 65001 > nul
+setlocal
 cd /d "%~dp0"
-if not exist config.json (
-  copy /Y config.example.json config.json >nul
-  echo config.json을 만들었습니다.
-  echo api_token을 변경하고 필요한 노드만 남긴 뒤 다시 실행하세요.
-  echo 기본 접속 경로는 lion.jbnu.ac.kr ^> ssh lionXX 입니다.
-  notepad config.json
-  pause
-  exit /b 0
-)
-python gateway_agent.py
+
+if exist "config.json" goto RUN_AGENT
+copy /Y "config.example.json" "config.json" >nul
+echo Created config.json.
+echo Open config.json and replace the api_token value.
+start "" notepad.exe "config.json"
+pause
+exit /b 0
+
+:RUN_AGENT
+where py >nul 2>nul
+if errorlevel 1 goto USE_PYTHON
+py -3 "gateway_agent.py"
+goto FINISH
+
+:USE_PYTHON
+python "gateway_agent.py"
+
+:FINISH
 if errorlevel 1 pause
+endlocal
