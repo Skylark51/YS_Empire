@@ -29,56 +29,22 @@
 
     <section id="siPanel" class="tool-panel">
       <div class="sera-heading"><div><p class="tool-note">FULL WORKFLOW</p><h2>SI Generator · Sera</h2><p>기존 데스크톱 SI Generator의 데이터 처리 기능을 웹 워크플로로 이식한 버전입니다.</p></div><span id="seraStatus" class="status-chip">파일 대기</span></div>
-
       <div class="workflow-grid">
-        <section class="form-card span-2">
-          <h3>0. Gaussian 파일 및 구조명</h3>
-          <label id="siDrop" class="drop-zone"><strong>Gaussian .out/.log 파일 또는 폴더를 선택</strong><small>브라우저 폴더 선택은 하위 폴더를 포함합니다.</small><input id="siFiles" type="file" accept=".out,.log,.txt" multiple hidden /></label>
-          <div class="inline-actions"><button id="chooseSiFiles">파일 추가</button><label class="button-like">폴더 전체 추가<input id="siFolder" type="file" webkitdirectory directory multiple hidden /></label><button id="autoGroupBtn" class="secondary">구조 자동 정렬</button><button id="clearSi" class="secondary">초기화</button></div>
-          <div id="siFileList" class="file-list"></div><div id="structureEditor" class="table-wrap"></div>
-        </section>
-
-        <section class="form-card"><h3>1. 문서 설정</h3>
-          <label>SI 제목<input id="siTitle" value="Computational Details and Cartesian Coordinates" /></label>
-          <label>Mechanism phrase<input id="mechanismPhrase" placeholder="예: O–O bond cleavage" /></label>
-          <label>출력 파일 접두어<input id="outputPrefix" value="SI_Generator" /></label>
-          <label class="check"><input id="includeAbsolute" type="checkbox" checked /> Absolute energy table 포함</label>
-          <label class="check"><input id="includeCoordinates" type="checkbox" checked /> Cartesian coordinates 포함</label>
-        </section>
-
-        <section class="form-card"><h3>2. 에너지 설정</h3>
-          <label>에너지 입력<select id="energyInputMode"><option value="auto">Gaussian에서 자동 추출</option><option value="manual-both">Absolute + Relative 수동</option><option value="manual-relative">Relative만 수동</option></select></label>
-          <label>Energy basis<select id="energyBasis"><option value="gibbs">Gibbs</option><option value="electronic">Electronic</option><option value="electronic-zpe">Electronic + ZPE</option><option value="enthalpy">Enthalpy</option><option value="current">Current/default behavior</option></select></label>
-          <label>Reference mode<select id="referenceMode"><option value="single">Single Structure</option><option value="separate">Separate Reactants</option><option value="numeric">Manual Numeric Reference</option><option value="manual-relative">Manual Relative Only</option></select></label>
-          <label>Reference 구조<select id="referenceStructure"></select></label>
-          <label>수동 reference 값<input id="manualReference" type="number" step="any" placeholder="Hartree" /></label>
-          <label>Separate reactants<input id="separateReactants" placeholder="구조명*계수 + 구조명*계수" /></label>
-        </section>
-
-        <section class="form-card span-2 manual-energy"><h3>3. 수동 에너지 표</h3><p class="tool-note">Excel에서 탭 구분 데이터를 그대로 붙여넣을 수 있습니다.</p>
-          <div class="two-col"><label>Absolute Energy Table<textarea id="manualAbsolute" rows="6" placeholder="Structure\tE\tZPE\tH\tG"></textarea></label><label>Relative Energy Table<textarea id="manualRelative" rows="6" placeholder="Structure\tΔG"></textarea></label></div>
-        </section>
-
-        <section class="form-card"><h3>4. Mulliken spin density</h3>
-          <label class="check"><input id="spinAuto" type="checkbox" checked /> 자동 분석</label>
-          <label>Tracked atoms<input id="spinAutoCount" type="number" min="1" max="20" value="6" /></label>
-          <label>수동 Atom IDs<input id="spinManualIds" placeholder="예: 1, 12, 38, 39" disabled /></label>
-          <label class="check"><input id="spinSeparateReport" type="checkbox" checked /> 강조 분석 별도 보고서 생성</label>
-        </section>
-
+        <section class="form-card span-2"><h3>0. Gaussian 파일 및 구조명</h3><label id="siDrop" class="drop-zone"><strong>Gaussian .out/.log 파일 또는 폴더를 선택</strong><small>브라우저 폴더 선택은 하위 폴더를 포함합니다.</small><input id="siFiles" type="file" accept=".out,.log,.txt" multiple hidden /></label><div class="inline-actions"><button id="chooseSiFiles">파일 추가</button><label class="button-like">폴더 전체 추가<input id="siFolder" type="file" webkitdirectory directory multiple hidden /></label><button id="autoGroupBtn" class="secondary">구조 자동 정렬</button><button id="clearSi" class="secondary">초기화</button></div><div id="siFileList" class="file-list"></div><div id="structureEditor" class="table-wrap"></div></section>
+        <section class="form-card"><h3>1. 문서 설정</h3><label>SI 제목<input id="siTitle" value="Computational Details and Cartesian Coordinates" /></label><label>Mechanism phrase<input id="mechanismPhrase" placeholder="예: O–O bond cleavage" /></label><label>출력 파일 접두어<input id="outputPrefix" value="SI_Generator" /></label><label class="check"><input id="includeAbsolute" type="checkbox" checked /> Absolute energy table 포함</label><label class="check"><input id="includeCoordinates" type="checkbox" checked /> Cartesian coordinates 포함</label></section>
+        <section class="form-card"><h3>2. 에너지 설정</h3><label>에너지 입력<select id="energyInputMode"><option value="auto">Gaussian에서 자동 추출</option><option value="manual-both">Absolute + Relative 수동</option><option value="manual-relative">Relative만 수동</option></select></label><label>Energy basis<select id="energyBasis"><option value="gibbs">Gibbs</option><option value="electronic">Electronic</option><option value="electronic-zpe">Electronic + ZPE</option><option value="enthalpy">Enthalpy</option><option value="current">Current/default behavior</option></select></label><label>Reference mode<select id="referenceMode"><option value="single">Single Structure</option><option value="separate">Separate Reactants</option><option value="numeric">Manual Numeric Reference</option><option value="manual-relative">Manual Relative Only</option></select></label><label>Reference 구조<select id="referenceStructure"></select></label><label>수동 reference 값<input id="manualReference" type="number" step="any" placeholder="Hartree" /></label><label>Separate reactants<input id="separateReactants" placeholder="구조명*계수 + 구조명*계수" /></label></section>
+        <section class="form-card span-2 manual-energy"><h3>3. 수동 에너지 표</h3><p class="tool-note">Excel에서 탭 구분 데이터를 그대로 붙여넣을 수 있습니다.</p><div class="two-col"><label>Absolute Energy Table<textarea id="manualAbsolute" rows="6" placeholder="Structure\tE\tZPE\tH\tG"></textarea></label><label>Relative Energy Table<textarea id="manualRelative" rows="6" placeholder="Structure\tΔG"></textarea></label></div></section>
+        <section class="form-card"><h3>4. Mulliken spin density</h3><label class="check"><input id="spinAuto" type="checkbox" checked /> 자동 분석</label><label>Tracked atoms<input id="spinAutoCount" type="number" min="1" max="20" value="6" /></label><label>수동 Atom IDs<input id="spinManualIds" placeholder="예: 1, 12, 38, 39" disabled /></label><label class="check"><input id="spinSeparateReport" type="checkbox" checked /> 강조 분석 별도 보고서 생성</label></section>
         <section class="form-card"><h3>5. Key geometries</h3><p class="tool-note">한 줄마다 이름 = 원자번호. 2개 거리, 3개 각도, 4개 dihedral.</p><textarea id="geometryRules" rows="8" placeholder="Fe–N = 1,38\nN–O = 38,39\nFe–N–O = 1,38,39"></textarea></section>
-
         <section class="form-card"><h3>6. Figure captions</h3><textarea id="figureCaptions" rows="8" placeholder="한 줄에 caption 하나씩 입력"></textarea><p class="tool-note">Figure S1부터 자동 번호를 부여합니다.</p></section>
-
         <section class="form-card"><h3>7. 구조명 서식</h3><p>구조명에 <code>_{text}</code>와 <code>^{text}</code>를 사용하면 아래첨자와 위첨자 표기를 유지합니다.</p><div class="format-preview" id="formatPreview">예: Fe_{2}^{III}</div></section>
       </div>
-
       <div class="generation-bar"><button id="runSi" class="primary-large">Generate SI + XYZ</button><button id="generateSiOnly">SI Only</button><button id="generateXyzOnly">XYZ Only</button><button id="saveProjectBtn" class="secondary">설정 JSON 저장</button><label class="button-like secondary">설정 JSON 불러오기<input id="loadProjectInput" type="file" accept=".json" hidden /></label></div>
-      <div id="siProgress" class="progress-box" hidden><div><strong id="siProgressText">준비 중</strong><span id="siProgressPct">0%</span></div><progress id="siProgressBar" max="100" value="0"></progress></div>
-      <div id="siOutputs" class="output-list"></div>
+      <div id="siProgress" class="progress-box" hidden><div><strong id="siProgressText">준비 중</strong><span id="siProgressPct">0%</span></div><progress id="siProgressBar" max="100" value="0"></progress></div><div id="siOutputs" class="output-list"></div>
     </section>
   </main>
   <script src="research-tools.js"></script>
+  <script src="research-tools-hotfix.js"></script>
   <script>(()=>{const target=location.hash.slice(1);if(!target)return;document.querySelector(`.tool-tab[data-target="${target}"]`)?.click();})();</script>
 </body>
 </html>
