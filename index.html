@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>영섭랜드 · 계산 왕국 경영실</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark">YS</div>
+        <div>
+          <h1>영섭랜드 계산 왕국 <small>v1.01</small></h1>
+          <p>사람 · 서버 · AI가 함께 움직이는 연구 경영 시뮬레이션</p>
+        </div>
+      </div>
+
+      <div class="top-actions">
+        <button id="pauseBtn" class="btn secondary">전체 모니터링 일시정지</button>
+        <button data-speed="1" class="speed-btn active">1×</button>
+        <button data-speed="2" class="speed-btn">2×</button>
+        <button data-speed="4" class="speed-btn">4×</button>
+        <button id="addTaskBtn" class="btn primary">+ 새 계산 등록</button>
+      </div>
+
+      <div class="status-strip">
+        <span><i class="dot waiting"></i>대기 <b id="countWaiting">0</b></span>
+        <span><i class="dot running"></i>계산중 <b id="countRunning">0</b></span>
+        <span><i class="dot warning"></i>확인필요 <b id="countWarning">0</b></span>
+        <span><i class="dot done"></i>완료 <b id="countDone">0</b></span>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <section class="org-map-panel">
+        <div class="panel-heading">
+          <div>
+            <h2>오늘의 계산 사무실</h2>
+            <p>직원이 일하는 자리를 클릭하면 담당 서버와 현재 계산을 확인할 수 있습니다. glion은 사용 제외, tlion은 96코어로 구분됩니다.</p>
+          </div>
+          <div class="legend">
+            <span><i class="dot running"></i>계산중</span>
+            <span><i class="dot waiting"></i>대기</span>
+            <span><i class="dot warning"></i>확인필요</span>
+            <span><i class="dot done"></i>완료</span>
+          </div>
+        </div>
+
+        <div class="executive-row">
+          <article class="executive-card pixel-panel">
+            <div class="boss-scene">
+              <img src="assets/characters/ceo-youngseop.png" alt="컴퓨터 앞에서 업무를 지휘하는 이영섭 대표" />
+            </div>
+            <div>
+              <span class="eyebrow">OWNER · 대표이사</span>
+              <h3>이영섭 <small>“계산 왕국의 사장”</small></h3>
+              <p>연구 전략 · 계산 배치 · 결과 검수 · 월급 지급</p>
+            </div>
+            <div class="executive-metrics">
+              <strong id="totalJobs">0</strong>
+              <span>가동 좌석</span>
+            </div>
+          </article>
+        </div>
+
+        <div class="connector trunk"></div>
+
+        <div id="departmentGrid" class="department-grid"></div>
+      </section>
+
+      <aside class="side-panel">
+        <section class="detail-card">
+          <div class="section-title-row">
+            <div>
+              <span class="eyebrow">선택 서버</span>
+              <h2 id="detailServerName">서버를 선택하세요</h2>
+            </div>
+            <span id="detailStatusBadge" class="badge neutral">미선택</span>
+          </div>
+
+          <div id="emptyDetail" class="empty-state">
+            서버 카드 하나를 클릭하면 노드, 계산 파일, 진행률, 예상 종료시각을 표시합니다.
+          </div>
+
+          <div id="detailContent" class="detail-content hidden">
+            <div class="info-grid">
+              <div><span>기관</span><strong id="detailInstitution">-</strong></div>
+              <div><span>접속명</span><strong id="detailHost">-</strong></div>
+              <div><span>CPU</span><strong id="detailCpu">-</strong></div>
+              <div><span>메모리</span><strong id="detailMemory">-</strong></div>
+            </div>
+
+            <div class="progress-block">
+              <div class="progress-label">
+                <span>현재 계산 진행률</span>
+                <strong id="detailProgressText">0%</strong>
+              </div>
+              <div class="progress-track">
+                <div id="detailProgressBar" class="progress-fill"></div>
+              </div>
+            </div>
+
+            <dl class="detail-list">
+              <div><dt>프로젝트</dt><dd id="detailProject">-</dd></div>
+              <div><dt>현재 파일</dt><dd id="detailJob">-</dd></div>
+              <div><dt>계산 목적</dt><dd id="detailPurpose">-</dd></div>
+              <div><dt>시작 시각</dt><dd id="detailStarted">-</dd></div>
+              <div><dt>예상 종료</dt><dd id="detailEta">-</dd></div>
+              <div><dt>작업 디렉터리</dt><dd id="detailDirectory">-</dd></div>
+            </dl>
+
+            <div class="detail-actions">
+              <button id="markDoneBtn" class="btn secondary full">완료 처리</button>
+              <button id="needsReviewBtn" class="btn danger full">검수 필요 표시</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="todo-card">
+          <div class="section-title-row">
+            <div>
+              <span class="eyebrow">연구 할 일</span>
+              <h2>우선순위 큐</h2>
+            </div>
+            <button id="clearDoneBtn" class="text-btn">완료 정리</button>
+          </div>
+          <div id="taskList" class="task-list"></div>
+        </section>
+      </aside>
+    </main>
+
+    <footer class="event-console">
+      <div class="console-heading">
+        <h2>이벤트 로그</h2>
+        <button id="clearLogBtn" class="text-btn">로그 비우기</button>
+      </div>
+      <div id="eventLog" class="event-log"></div>
+    </footer>
+  </div>
+
+  <dialog id="taskDialog">
+    <form id="taskForm" method="dialog">
+      <div class="dialog-header">
+        <div>
+          <span class="eyebrow">새 계산</span>
+          <h2>계산 작업 등록</h2>
+        </div>
+        <button type="button" id="closeDialogBtn" class="icon-btn">×</button>
+      </div>
+
+      <label>
+        작업명
+        <input id="taskTitleInput" required placeholder="예: FeNO7 quartet Fe–N scan" />
+      </label>
+
+      <label>
+        프로젝트
+        <input id="taskProjectInput" required placeholder="예: FeNO6 / FeNO7" />
+      </label>
+
+      <label>
+        우선순위
+        <select id="taskPriorityInput">
+          <option value="high">높음</option>
+          <option value="medium" selected>중간</option>
+          <option value="low">낮음</option>
+        </select>
+      </label>
+
+      <label>
+        담당 서버
+        <select id="taskServerInput"></select>
+      </label>
+
+      <div class="dialog-actions">
+        <button type="button" id="cancelDialogBtn" class="btn secondary">취소</button>
+        <button type="submit" class="btn primary">등록</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="app.js"></script>
+</body>
+</html>
