@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>영섭랜드 연구도구실</title>
+  <link rel="stylesheet" href="research-tools.css" />
+</head>
+<body class="tools-page">
+  <main class="tools-shell">
+    <header class="tools-head">
+      <div>
+        <p class="tool-note">YS EMPIRE · RESEARCH TOOLS FLOOR</p>
+        <h1>영섭랜드 연구도구실</h1>
+        <p>Gaussian 출력 파일을 ChatGPT 분석용으로 재구성하고, SI 초안을 생성합니다. 모든 처리는 브라우저 안에서만 수행됩니다.</p>
+      </div>
+      <a href="index.html">← 계산 사무실로 돌아가기</a>
+    </header>
+
+    <section class="employee-strip" aria-label="연구도구 직원">
+      <article class="employee-mini">
+        <img src="assets/characters/tool-parser.svg" alt="Gaussian Output Parser 직원" />
+        <div><span class="status-chip">근무 중</span><h2>파서 · 로건</h2><p>대용량 Gaussian 로그를 요약본과 분석 청크로 분해합니다.</p></div>
+      </article>
+      <article class="employee-mini">
+        <img src="assets/characters/tool-si-generator.svg" alt="SI Generator 직원" />
+        <div><span class="status-chip">근무 중</span><h2>SI 제너레이터 · 세라</h2><p>계산 정보, 에너지, 최종 좌표를 SI 초안으로 정리합니다.</p></div>
+      </article>
+    </section>
+
+    <nav class="tool-tabs">
+      <button class="tool-tab active" data-target="parserPanel">Gaussian Output Parser</button>
+      <button class="tool-tab" data-target="siPanel">SI Generator</button>
+    </nav>
+
+    <section id="parserPanel" class="tool-panel active">
+      <h2>Gaussian Output Parser</h2>
+      <p class="tool-note">원본은 변경하지 않습니다. 핵심 메타데이터, 에너지, 진동수, 종료 상태, 마지막 좌표와 문맥 청크를 ZIP 대신 개별 다운로드 가능한 텍스트 파일로 만듭니다.</p>
+      <label id="parserDrop" class="drop-zone">
+        <strong>.out 또는 .log 파일을 놓거나 선택</strong>
+        <input id="parserFiles" type="file" accept=".out,.log,.txt" multiple hidden />
+      </label>
+      <div class="tool-controls">
+        <label>청크 크기 <select id="chunkSize"><option value="12000">약 12,000자</option><option value="24000" selected>약 24,000자</option><option value="48000">약 48,000자</option></select></label>
+        <button id="runParser">파일 재구성</button>
+        <button id="clearParser">초기화</button>
+      </div>
+      <div id="parserFileList" class="file-list"></div>
+      <div id="parserOutputs" class="output-list"></div>
+    </section>
+
+    <section id="siPanel" class="tool-panel">
+      <h2>SI Generator</h2>
+      <p class="tool-note">여러 Gaussian 파일을 선택하면 각 파일의 route section, charge/multiplicity, 종료 상태, SCF energy, thermal correction, imaginary frequency, 최종 Cartesian 좌표를 표와 문서 초안으로 정리합니다.</p>
+      <label id="siDrop" class="drop-zone">
+        <strong>SI에 포함할 Gaussian 파일을 놓거나 선택</strong>
+        <input id="siFiles" type="file" accept=".out,.log,.txt" multiple hidden />
+      </label>
+      <div class="tool-controls">
+        <label>제목 <input id="siTitle" value="Computational Details and Cartesian Coordinates" /></label>
+        <button id="runSi">SI 초안 생성</button>
+        <button id="clearSi">초기화</button>
+      </div>
+      <div id="siFileList" class="file-list"></div>
+      <div id="siOutputs" class="output-list"></div>
+    </section>
+  </main>
+  <script src="research-tools.js"></script>
+</body>
+</html>
