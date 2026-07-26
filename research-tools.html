@@ -66,5 +66,13 @@
     </section>
   </main>
   <script src="research-tools.js"></script>
+  <script>
+    (() => {
+      const target = location.hash.slice(1);
+      if (!target) return;
+      const button = document.querySelector(`.tool-tab[data-target="${target}"]`);
+      if (button) button.click();
+    })();
+  </script>
 </body>
 </html>
