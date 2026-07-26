@@ -183,6 +183,101 @@
     }
   }
 
+  function escapeHtml(value) {
+    return String(value ?? '').replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character]);
+  }
+
+  function npcSpriteMarkup(server) {
+    if (server.avatar) {
+      return `<img src="assets/characters/${escapeHtml(server.avatar)}" alt="${escapeHtml(server.name)} ${escapeHtml(server.role)}" />`;
+    }
+    if (server.spriteGroup && typeof spriteStyle === 'function') {
+      return `<span class="character-sprite sprite-${escapeHtml(server.spriteGroup)}" style="${spriteStyle(server)}" role="img" aria-label="${escapeHtml(server.name)} ${escapeHtml(server.role)}"></span>`;
+    }
+    return '<span class="npc-fallback" aria-hidden="true">?</span>';
+  }
+
+  function npcMarkup(server) {
+    const selected = typeof selectedServerId !== 'undefined' && selectedServerId === server.id;
+    return `
+      <button class="server-card office-npc ${selected ? 'selected' : ''}" type="button"
+              data-server-id="${escapeHtml(server.id)}" data-status="${escapeHtml(server.status)}"
+              aria-label="${escapeHtml(server.id)} ${escapeHtml(server.name)} 서버 정보 열기">
+        <span class="npc-floor-ring" aria-hidden="true"></span>
+        <span class="npc-workstation" aria-hidden="true"><i class="npc-monitor"></i><i class="npc-keyboard"></i><i class="npc-chair"></i></span>
+        <span class="employee-scene npc-scene">
+          <span class="monitor-glow"></span>
+          ${npcSpriteMarkup(server)}
+          <span class="work-pulse"><i></i><i></i><i></i></span>
+        </span>
+        <span class="npc-nameplate"><strong>${escapeHtml(server.id)}</strong><small>${escapeHtml(server.name)}</small></span>
+        <span class="npc-state-label">${escapeHtml(STATE_LABELS[deriveGameState(server.liveNode || {}, server)])}</span>
+      </button>`;
+  }
+
+  function zoneBody(department) {
+    if (department.restricted) {
+      return `<div class="map-equipment-bay"><span class="map-server-rack"><i></i><i></i><i></i></span><strong>glion1 · glion2</strong><small>GPU 장비 구역 · 직원 미배치</small></div>`;
+    }
+    if (department.empty) {
+      return `<div class="map-future-bay"><span class="future-desk-row"><i></i><i></i><i></i></span><strong>UNIST 확장 구역</strong><small>추후 직원과 서버 배치 예정</small></div>`;
+    }
+    return `<div class="office-npc-grid">${department.servers.map(npcMarkup).join('')}</div>`;
+  }
+
+  function zoneMarkup(department) {
+    return `
+      <section class="department department-${escapeHtml(department.id)} office-zone zone-${escapeHtml(department.id)}" data-zone="${escapeHtml(department.id)}">
+        <header class="office-zone-sign"><span>${escapeHtml(department.manager)}</span><strong>${escapeHtml(department.name)}</strong></header>
+        ${zoneBody(department)}
+      </section>`;
+  }
+
+  function selectNpc(id) {
+    const panel = document.querySelector('.org-map-panel');
+    const scrollLeft = panel?.scrollLeft || 0;
+    const scrollTop = panel?.scrollTop || 0;
+    selectServer(id);
+    requestAnimationFrame(() => {
+      if (panel) panel.scrollTo({ left: scrollLeft, top: scrollTop, behavior: 'auto' });
+      document.querySelector(`.office-npc[data-server-id="${id}"]`)?.focus({ preventScroll: true });
+    });
+  }
+
+  function configureOfficePresentation() {
+    document.body.classList.add('office-map-mode');
+    const heading = document.querySelector('.org-map-panel .panel-heading h2');
+    const description = document.querySelector('.org-map-panel .panel-heading p');
+    const empty = document.getElementById('emptyDetail');
+    if (heading) heading.textContent = 'Lion 중앙 관제 오피스';
+    if (description) description.textContent = '중앙 맵의 직원 NPC를 클릭하면 담당 서버와 현재 계산이 오른쪽에 표시됩니다.';
+    if (empty) empty.textContent = '맵에서 직원 NPC를 클릭하면 서버와 계산 상세 정보가 표시됩니다.';
+  }
+
+  function renderOfficeMap() {
+    const grid = document.getElementById('departmentGrid');
+    if (!grid || grid.querySelector('.pixel-office-world')) return;
+    const serverCount = typeof allServers === 'function' ? allServers().length : lionServers().length;
+    grid.classList.add('office-map-grid');
+    grid.innerHTML = `
+      <div class="pixel-office-world" aria-label="영섭랜드 서버 관제 오피스 맵">
+        <div class="office-wall-grid" aria-hidden="true"></div>
+        <section class="command-deck" aria-label="이영섭 대표 관제석">
+          <div class="command-lights" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+          <div class="boss-command-scene">
+            <span class="boss-watch-cone" aria-hidden="true"></span>
+            <img src="assets/characters/ceo-youngseop.png" alt="직원들의 계산 업무를 감독하는 이영섭 대표" />
+            <span class="boss-console" aria-hidden="true"><i></i><i></i><i></i></span>
+          </div>
+          <div class="command-copy"><span class="eyebrow">OWNER COMMAND DECK</span><h3>이영섭 대표 관제석</h3><p>직원 배치 · 계산 진행 감시 · 결과 검수</p></div>
+          <div class="command-count"><strong>${serverCount}</strong><span>관제 좌석</span></div>
+        </section>
+        <div class="office-corridor main-corridor" aria-hidden="true"><span>CONTROL FLOOR 01</span></div>
+        <div class="office-zone-layout">${departments.map(zoneMarkup).join('')}</div>
+      </div>`;
+    grid.querySelectorAll('.office-npc').forEach(npc => npc.addEventListener('click', () => selectNpc(npc.dataset.serverId)));
+  }
+
   function ensureCardLayers(card) {
     const scene = card.querySelector('.employee-scene');
     if (!scene) return;
@@ -196,10 +291,10 @@
 
   function decorateCard(card) {
     const id = card.dataset.serverId;
-    if (!/^(?:t?lion)\d+$/i.test(id)) return;
     const server = typeof getServer === 'function' ? getServer(id) : {};
+    if (!server) return;
     const node = findNode(id) || {};
-    const gameState = deriveGameState(node, server || {});
+    const gameState = deriveGameState(node, server);
     ensureCardLayers(card);
     card.dataset.gameState = gameState;
     card.classList.remove(...GAME_STATES.map(state => `character-${state}`));
@@ -209,6 +304,8 @@
       icon.textContent = STATE_ICONS[gameState];
       icon.title = STATE_LABELS[gameState];
     }
+    const stateLabel = card.querySelector('.npc-state-label');
+    if (stateLabel) stateLabel.textContent = STATE_LABELS[gameState];
     const badge = card.querySelector('.badge');
     if (badge) {
       badge.textContent = STATE_LABELS[gameState];
@@ -221,13 +318,15 @@
       bubble.hidden = !memo;
       bubble.title = memo;
     }
+    card.setAttribute('aria-label', `${id} ${server.name} · ${STATE_LABELS[gameState]} · 서버 정보 열기`);
   }
 
   function decorateAllCards() {
+    configureOfficePresentation();
+    renderOfficeMap();
     document.querySelectorAll('.server-card').forEach(decorateCard);
     updateOrgTree();
   }
-
   function ensureDetailPanel() {
     if (document.getElementById('gameServerDetail')) return;
     const content = document.getElementById('detailContent');
@@ -285,7 +384,7 @@
     const input = document.getElementById('serverMemoInput');
     if (input) input.value = memo;
     const detailBadge = document.getElementById('detailStatusBadge');
-    if (detailBadge && /^(?:t?lion)\d+$/i.test(id)) {
+    if (detailBadge) {
       detailBadge.textContent = STATE_LABELS[gameState];
       detailBadge.dataset.gameState = gameState;
     }

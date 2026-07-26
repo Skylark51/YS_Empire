@@ -55,4 +55,17 @@ assert.equal(/localStorage/.test(gameSource), false);
 
 const app = fs.readFileSync(new URL('../app.js', import.meta.url), 'utf8');
 assert.match(app, /!server\.monitorManaged/);
-console.log('PASS: 6 game states, high-load threshold, detail mapping, memo policy, /api/status-only contract');
+const css = fs.readFileSync(new URL('../game-ui.css', import.meta.url), 'utf8');
+assert.match(gameSource, /pixel-office-world/);
+assert.match(gameSource, /command-deck/);
+assert.match(gameSource, /office-npc/);
+assert.match(gameSource, /function selectNpc/);
+assert.match(gameSource, /selectServer\(id\)/);
+assert.match(gameSource, /직원 NPC를 클릭/);
+assert.match(css, /\.pixel-office-world/);
+assert.match(css, /\.boss-command-scene/);
+assert.match(css, /\.office-npc\.server-card/);
+assert.match(css, /\.office-zone-layout/);
+assert.match(css, /@media \(max-width: 720px\)/);
+assert.doesNotMatch(gameSource, /fetch\s*\(/);
+console.log('PASS: 6 game states, office map/NPC/detail wiring, responsive layout, memo policy, /api/status-only contract');
