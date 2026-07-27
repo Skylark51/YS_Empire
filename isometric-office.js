@@ -110,7 +110,7 @@
 
   function characterMarkup(server) {
     return `
-      <button type="button" class="office-character ${selectedServerId === server.id ? 'selected' : ''}"
+      <button type="button" class="office-character server-card ${selectedServerId === server.id ? 'selected' : ''}"
               data-server-id="${escapeHtml(server.id)}" data-status="${escapeHtml(server.status)}"
               aria-label="${escapeHtml(server.id)} ${escapeHtml(server.name)} 서버 선택">
         <span class="character-desk" aria-hidden="true"><i></i><b></b></span>
@@ -198,7 +198,7 @@
       document.querySelector('.sidebar-control-slot .command-toolbar') !== null,
       document.querySelector('.characters-only-grid') !== null,
       document.querySelectorAll('.office-character').length === expectedVisibleCount,
-      document.querySelectorAll('.office-character title').length === 0,
+      document.querySelectorAll('.office-character[title]').length === 0,
       document.querySelectorAll('.character-status-light').length === 0,
       document.querySelector('.side-panel .detail-card') !== null,
       document.querySelector('.side-panel .event-console') !== null
