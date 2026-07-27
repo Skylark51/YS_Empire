@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Run YS Lion Agent through the configured JBNU login shell.
 
-Connection path: Windows -> lion.jbnu.ac.kr -> ssh lionXX
+Connection path: Windows -> skylark@lion.jbnu.ac.kr -> ssh lionXX
 """
 from __future__ import annotations
 
@@ -21,10 +21,12 @@ ORIGINAL_RUN = node_collector.subprocess.run
 def load_route() -> tuple[str, str]:
     with CONFIG_PATH.open("r", encoding="utf-8") as handle:
         config: dict[str, Any] = json.load(handle)
-    return (
-        str(config.get("connection_mode", "gateway_shell")),
-        str(config.get("gateway", "lion.jbnu.ac.kr")),
-    )
+    mode = str(config.get("connection_mode", "gateway_shell"))
+    gateway = str(config.get("gateway", "lion.jbnu.ac.kr")).strip()
+    gateway_user = str(config.get("gateway_user", "skylark")).strip()
+    if gateway_user and "@" not in gateway:
+        gateway = f"{gateway_user}@{gateway}"
+    return mode, gateway
 
 
 def routed_run(command: Any, *args: Any, **kwargs: Any):
