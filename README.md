@@ -1,81 +1,117 @@
-# 영섭랜드 계산 왕국 — 픽셀 오피스 v1.01
+# 영섭랜드 서버 관제실
 
-Gaussian 계산 서버와 AI 자원을 실제 직원이 일하는 픽셀 사무실처럼 시각화한 오프라인 웹 대시보드입니다.
+전북대학교 Lion Cluster의 Gaussian 계산 상태를 픽셀 오피스 형태로 확인하는 웹 대시보드입니다.
 
-## 현재 포함된 기능
+- 배포 화면: `https://skylark51.github.io/YS_Empire/`
+- 저장소: `https://github.com/Skylark51/YS_Empire`
+- 프런트엔드: GitHub Pages 정적 웹앱
+- 실시간 수집: Windows에서 실행하는 `server-agent`
 
-- 이영섭 대표와 서버마다 서로 다른 픽셀 직원
-- 직속 부서: lion28, 29, 30, 38, 39, 40, 48, 49, 50, 51 및 96코어 tlion3
-- 타 부서 차출 자원: 나머지 lion 33대
-- 고성능 지원실: 96코어 tlion1, tlion2, tlion4
-- GPU 사용 제외 구역: glion1, glion2
-- 전북대학교 / 이화여자대학교 / UNIST / AI 자원 부서
-- UNIST 부서는 현재 공석으로 표시
-- ChatGPT 1·2와 Gemini Cloud 인턴의 이름·직급·월급 표시
-- 서버별 계산 상태, CPU, 메모리, 프로젝트, 파일명, 진행률 표시
-- 직원 자리 클릭 시 우측 서버·계산 상세 패널 표시
-- 완료 처리 및 검수 필요 표시
-- 연구 할 일 우선순위 큐
-- 새 계산 작업 등록
-- 이벤트 로그
-- 계산 진행률 시뮬레이션
-- 반응형 화면
+## 현재 구조
 
-## 실행 방법
-
-### 가장 간단한 방법
-
-`index.html` 파일을 Chrome 또는 Edge로 열면 됩니다.
-
-### 로컬 서버 방식
-
-Python이 설치되어 있다면 이 폴더에서 다음을 실행합니다.
-
-```bash
-python -m http.server 8000
-```
-
-브라우저에서 다음 주소를 엽니다.
+GitHub Pages는 SSH 명령을 직접 실행하거나 서버 비밀번호를 안전하게 보관할 수 없습니다. 따라서 다음과 같이 분리합니다.
 
 ```text
-http://localhost:8000
+GitHub Pages
+    ↓ HTTP API + Bearer token
+Windows Lion Agent (127.0.0.1:8765)
+    ↓ SSH key / BatchMode=yes
+lion.jbnu.ac.kr
+    ↓ 내부 ssh
+lionXX / tlionXX
 ```
 
-Windows에서는 `실행.bat`를 더블클릭해도 됩니다.
+브라우저에는 Lion 비밀번호나 SSH 개인키를 저장하지 않습니다. Agent 접근 토큰은 현재 탭의 `sessionStorage`에만 저장됩니다.
 
-## 데이터 수정 위치
+## 주요 기능
 
-현재 샘플 서버와 계산 정보는 `app.js` 상단의 노드 목록과 생성 함수에 있습니다. 화면의 진행 상태는 아직 Ganglia 실시간 값이 아닌 샘플/수동 상태입니다.
+- lion/tlion 노드별 실시간 접속 및 Gaussian 상태 확인
+- 계산 파일, PID, 시작 시각, 작업 디렉터리, Load, CPU, 메모리 표시
+- 계산 단계 및 정상/오류 종료 판정
+- 서버별 메모 저장
+- 다크 모드와 라이트 모드
+- 서버명·직원명·계산명 검색 및 상태 필터
+- 직속 서버와 차출 가능 서버 구분
+- 픽셀 캐릭터 상태 표시와 우측 상세 패널
 
-예:
+## 최초 실행
 
-```javascript
+### 1. 저장소 준비
+
+```powershell
+git clone https://github.com/Skylark51/YS_Empire.git
+cd YS_Empire\server-agent
+```
+
+Git 없이 ZIP으로 내려받아도 됩니다.
+
+### 2. SSH 자동 로그인 설정
+
+배포 화면의 **연결 설정** 버튼 또는 `agent-setup.html`을 참고합니다.
+
+핵심 조건은 다음 두 명령이 비밀번호 없이 성공하는 것입니다.
+
+```powershell
+ssh -o BatchMode=yes skylark@lion.jbnu.ac.kr "hostname"
+ssh skylark@lion.jbnu.ac.kr "ssh -o BatchMode=yes lion28 hostname"
+```
+
+Agent는 `BatchMode=yes`를 사용하므로 비밀번호 입력이 필요한 상태에서는 노드를 오프라인으로 처리합니다.
+
+### 3. Agent 설정
+
+`server-agent\run_agent.bat`을 처음 실행하면 `config.example.json`을 `config.json`으로 복사합니다.
+
+`config.json`에서 다음 값을 변경합니다.
+
+```json
 {
-  id: "lion29",
-  name: "도윤",
-  role: "선임 계산기사",
-  avatar: "jbnu-doyun.png",
-  salary: "서버 자원",
-  host: "ssh lion29",
-  institution: "전북대학교",
-  cpu: "16 cores",
-  memory: "60 GB",
-  status: "running",
-  progress: 68,
-  project: "FeNO6 / FeNO7",
-  job: "3-FeNO6-...out"
+  "api_token": "충분히 긴 임의 문자열"
 }
 ```
 
-## 다음 개발 단계
+`config.json`은 로컬 전용이며 GitHub에 업로드하지 않습니다.
 
-1. 서버 SSH 접속 및 실제 상태 수집
-2. `ps`, `top`, Gaussian output tail 기반 실제 진행률 계산
-3. Ganglia 또는 Slurm/PBS 데이터 연동
-4. 계산 제출용 run script 생성
-5. Gaussian Evidence Extractor 결과 연동
-6. SQLite 기반 프로젝트·서버·계산 이력 저장
-7. 알림 기능
-8. 데스크톱 EXE 패키징
+### 4. Agent 실행
 
-이 버전은 화면 구성과 사용자 흐름을 확인하기 위한 프론트엔드 프로토타입입니다.
+```powershell
+server-agent\run_agent.bat
+```
+
+정상 실행 주소:
+
+```text
+http://127.0.0.1:8765/api/health
+```
+
+### 5. 웹 화면 연결
+
+1. 영섭랜드 하단의 **샘플 데이터 / Lion Agent 미연결** 버튼을 누릅니다.
+2. Agent 주소를 `http://127.0.0.1:8765`로 둡니다.
+3. `config.json`의 `api_token`을 입력합니다.
+4. **연결 테스트** 후 **저장하고 연결**을 누릅니다.
+
+## 수집 대상
+
+기본 설정은 JBNU CPU 풀을 자동 확장합니다.
+
+- 직속: lion28, 29, 30, 38, 39, 40, 48, 49, 50, 51, tlion3
+- 차출 가능: 나머지 lion CPU 노드
+- 고성능 지원: tlion1, tlion2, tlion4
+- 제외: glion1, glion2
+
+## 보안 원칙
+
+- SSH 개인키와 서버 비밀번호를 웹 코드에 입력하지 않습니다.
+- `server-agent/config.json`을 커밋하지 않습니다.
+- `server-agent/data/`의 캐시·이력·메모를 커밋하지 않습니다.
+- Agent는 기본적으로 `127.0.0.1`에서만 수신합니다.
+- 원격 명령은 상태 조회용이며 계산 제출·종료·파일 수정은 수행하지 않습니다.
+
+## 테스트
+
+```powershell
+cd server-agent
+py -m unittest discover -s tests -v
+py -m py_compile agent.py collector.py node_collector.py storage.py gateway_agent.py
+```
