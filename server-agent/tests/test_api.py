@@ -71,11 +71,10 @@ class ApiTests(unittest.TestCase):
     def test_manual_refresh_is_authenticated_and_non_blocking(self) -> None:
         status, _ = self.request("POST", "/api/refresh", token=False)
         self.assertEqual(status, 401)
-        with unittest.mock.patch("agent.threading.Thread") as thread:
+        with unittest.mock.patch("agent.run_collection", return_value=True):
             status, payload = self.request("POST", "/api/refresh")
         self.assertEqual(status, 202)
         self.assertTrue(payload["accepted"])
-        thread.assert_called_once()
 
     def test_note_upsert_get_immediate_status_and_delete(self) -> None:
         status, payload = self.request(
