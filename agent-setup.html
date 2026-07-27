@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="dark light" />
+  <title>영섭랜드 · Lion Agent 연결 설정</title>
+  <style>
+    :root{--bg:#0b111a;--panel:#121c29;--panel2:#182536;--line:#2b3d52;--text:#e9f0f8;--muted:#9aabbe;--accent:#75b8ff;--ok:#56d89c;--warn:#ffc46b;--danger:#ff7e8a}
+    *{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 15% 0,rgba(90,130,230,.13),transparent 28%),var(--bg);color:var(--text);font-family:Inter,Pretendard,"Noto Sans KR",Arial,sans-serif;line-height:1.65}.page{width:min(980px,calc(100% - 28px));margin:0 auto;padding:34px 0 70px}.hero,.card{border:1px solid var(--line);border-radius:16px;background:rgba(18,28,41,.92);box-shadow:0 18px 48px rgba(0,0,0,.24)}.hero{padding:25px}.hero h1{margin:0;font-size:27px}.hero p{margin:8px 0 0;color:var(--muted)}.badge{display:inline-flex;margin-bottom:10px;padding:5px 9px;border:1px solid rgba(117,184,255,.35);border-radius:999px;color:var(--accent);font-size:11px;font-weight:800;letter-spacing:.08em}.card{margin-top:16px;padding:21px}.card h2{margin:0 0 11px;font-size:18px}.card h3{margin:20px 0 7px;font-size:14px}.card p,.card li{color:var(--muted);font-size:13px}.card strong{color:var(--text)}ol{padding-left:21px}li+li{margin-top:7px}pre{position:relative;margin:10px 0;padding:14px 15px;overflow:auto;border:1px solid var(--line);border-radius:11px;background:#080d14;color:#dce8f5;font:12px/1.65 "Cascadia Code",Consolas,monospace;white-space:pre-wrap}.note{padding:12px 14px;border-left:4px solid var(--accent);border-radius:8px;background:rgba(117,184,255,.08);color:var(--muted);font-size:12px}.warning{border-left-color:var(--warn);background:rgba(255,196,107,.08)}.success{border-left-color:var(--ok);background:rgba(86,216,156,.08)}.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}.back{display:inline-flex;margin-top:18px;padding:10px 14px;border:1px solid var(--line);border-radius:10px;background:var(--panel2);color:var(--text);font-size:12px;font-weight:800;text-decoration:none}.back:hover{border-color:var(--accent)}code{color:var(--accent)}@media(max-width:760px){.grid{grid-template-columns:1fr}.hero h1{font-size:22px}}
+    @media(prefers-color-scheme:light){:root{--bg:#edf3f8;--panel:#fff;--panel2:#f2f7fb;--line:#c7d5e2;--text:#17283a;--muted:#60758a;--accent:#1767b4}.hero,.card{background:rgba(255,255,255,.94);box-shadow:0 16px 40px rgba(48,70,92,.12)}pre{background:#edf3f8;color:#17283a}}
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="hero">
+      <span class="badge">YS EMPIRE · LION LIVE BRIDGE</span>
+      <h1>Lion Agent 최초 연결 설정</h1>
+      <p>GitHub Pages는 SSH를 직접 실행할 수 없습니다. Windows의 로컬 Agent가 SSH 키로 Lion 상태를 읽고, 브라우저에는 JSON 상태만 전달합니다.</p>
+    </section>
+
+    <section class="card">
+      <h2>전체 연결 구조</h2>
+      <pre>GitHub Pages 화면
+    ↓  Bearer token + CORS
+http://127.0.0.1:8765  (내 Windows의 Lion Agent)
+    ↓  SSH key / BatchMode=yes
+lion.jbnu.ac.kr
+    ↓  내부 ssh
+lion28, lion29, ..., tlion3</pre>
+      <div class="note warning"><strong>비밀번호와 SSH 개인키는 웹페이지나 GitHub 저장소에 넣지 않습니다.</strong> 브라우저에는 Agent 접근 토큰만 현재 탭의 <code>sessionStorage</code>에 보관됩니다.</div>
+    </section>
+
+    <section class="card">
+      <h2>1. Windows SSH 키 준비</h2>
+      <p>PowerShell에서 다음 명령을 실행합니다. 이미 사용할 SSH 키가 있다면 새로 만들 필요가 없습니다.</p>
+      <pre>ssh-keygen -t ed25519 -C "ys-empire-lion"</pre>
+      <p>기본 경로인 <code>C:\Users\사용자명\.ssh\id_ed25519</code>를 사용합니다. 개인키에 암호를 설정했다면 Windows <code>ssh-agent</code>에 한 번 등록합니다.</p>
+      <pre>Get-Service ssh-agent | Set-Service -StartupType Automatic
+Start-Service ssh-agent
+ssh-add $env:USERPROFILE\.ssh\id_ed25519</pre>
+      <div class="note">서비스 설정 명령에서 권한 오류가 나면 PowerShell을 관리자 권한으로 한 번 실행합니다.</div>
+    </section>
+
+    <section class="card">
+      <h2>2. 공개키를 JBNU 게이트웨이에 등록</h2>
+      <p>아래 명령은 <strong>공개키만</strong> 게이트웨이의 <code>~/.ssh/authorized_keys</code>에 추가합니다. 이 단계에서는 기존 Lion 비밀번호를 한 번 입력할 수 있습니다.</p>
+      <pre>Get-Content $env:USERPROFILE\.ssh\id_ed25519.pub | ssh skylark@lion.jbnu.ac.kr "umask 077; mkdir -p ~/.ssh; cat >> ~/.ssh/authorized_keys; chmod 700 ~/.ssh; chmod 600 ~/.ssh/authorized_keys"</pre>
+      <h3>접속 테스트</h3>
+      <pre>ssh -o BatchMode=yes skylark@lion.jbnu.ac.kr "hostname"
+ssh skylark@lion.jbnu.ac.kr "ssh -o BatchMode=yes lion28 hostname"</pre>
+      <div class="note success">두 명령 모두 비밀번호 입력 없이 호스트명이 출력되면 자동 로그인 준비가 끝난 것입니다.</div>
+      <div class="note warning">연구실 정책상 공개키 등록이 금지되거나 2단계 인증이 강제되는 경우에는 자동 SSH 수집이 불가능할 수 있습니다. 이 경우 관리자의 허용이 필요합니다.</div>
+    </section>
+
+    <section class="card">
+      <h2>3. Lion Agent 설정과 실행</h2>
+      <ol>
+        <li>저장소를 내려받거나 동기화합니다.</li>
+        <li><code>server-agent\run_agent.bat</code>을 실행합니다.</li>
+        <li>처음 실행하면 <code>config.example.json</code>이 <code>config.json</code>으로 복사됩니다.</li>
+        <li><code>api_token</code>을 충분히 긴 임의 문자열로 바꿉니다.</li>
+        <li>배치 파일을 다시 실행합니다.</li>
+      </ol>
+      <p>PowerShell에서 안전한 토큰을 생성하는 예:</p>
+      <pre>[Convert]::ToHexString((1..32 | ForEach-Object { Get-Random -Maximum 256 }))</pre>
+      <p>Agent가 정상 실행되면 다음 주소가 열립니다.</p>
+      <pre>http://127.0.0.1:8765/api/health</pre>
+      <div class="note"><code>config.json</code>, SSH 개인키, <code>server-agent/data/</code>는 GitHub에 업로드하지 않습니다.</div>
+    </section>
+
+    <section class="card">
+      <h2>4. 영섭랜드 화면에서 연결</h2>
+      <ol>
+        <li>영섭랜드 하단의 <strong>샘플 데이터 / Lion Agent 미연결</strong> 버튼을 누릅니다.</li>
+        <li>Agent 주소는 <code>http://127.0.0.1:8765</code>로 둡니다.</li>
+        <li><code>config.json</code>의 <code>api_token</code>을 입력합니다.</li>
+        <li><strong>연결 테스트</strong> 후 <strong>저장하고 연결</strong>을 누릅니다.</li>
+      </ol>
+      <p>연결 후에는 10초 간격으로 상태가 갱신되며, 새로고침 버튼은 Agent에 즉시 재수집을 요청합니다.</p>
+    </section>
+
+    <section class="card grid">
+      <div>
+        <h2>문제: HTTP 401</h2>
+        <p>화면에 입력한 토큰과 <code>server-agent/config.json</code>의 <code>api_token</code>이 다릅니다.</p>
+      </div>
+      <div>
+        <h2>문제: 연결 시간 초과</h2>
+        <p>Agent가 꺼져 있거나 Windows 방화벽, SSH 접속, 게이트웨이 연결을 확인해야 합니다.</p>
+      </div>
+      <div>
+        <h2>문제: 모든 노드 오프라인</h2>
+        <p><code>BatchMode=yes</code> 테스트가 비밀번호 없이 성공하는지 먼저 확인합니다.</p>
+      </div>
+      <div>
+        <h2>문제: CORS 오류</h2>
+        <p><code>allowed_origins</code>에 <code>https://skylark51.github.io</code>가 포함되어 있는지 확인합니다.</p>
+      </div>
+    </section>
+
+    <a class="back" href="./">← 영섭랜드로 돌아가기</a>
+  </main>
+</body>
+</html>
