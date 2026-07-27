@@ -68,6 +68,7 @@
   ],
   "connection_mode": "gateway_shell",
   "gateway": "lion.jbnu.ac.kr",
+  "gateway_user": "skylark",
   "include_jbnu_pool": true,
   "exclude_node_ids": []
 }
