@@ -5,7 +5,6 @@
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
   }[character]));
 
-  const statusText = { waiting: '대기', running: '계산중', warning: '확인필요', done: '완료' };
   const departmentOrder = ['jbnu-owned', 'jbnu-hpc', 'jbnu-borrowed', 'ai', 'ewha', 'gpu-restricted', 'unist'];
   const speechPools = {
     running: ['계산 진행 중입니다.', '출력 파일을 확인하고 있습니다.', '수렴 상태를 점검 중입니다.', '조금만 더 계산하겠습니다.'],
@@ -19,7 +18,6 @@
     sera: ['SI 초안을 정리합니다.', '표와 좌표를 정돈합니다.', '계산 조건을 확인합니다.', '문서 형식을 맞추고 있습니다.']
   };
 
-  let activeFilter = 'all';
   let speechIntervalId = null;
   let speechHideTimeoutId = null;
 
@@ -29,15 +27,6 @@
       ...departmentOrder.map(id => byId.get(id)).filter(Boolean),
       ...departments.filter(department => !departmentOrder.includes(department.id))
     ];
-  }
-
-  function matchesFilter(server, department) {
-    const query = (document.getElementById('serverSearchInput')?.value || '').trim().toLowerCase();
-    const searchable = `${server.id} ${server.name} ${server.role || ''} ${server.project || ''} ${server.job || ''} ${server.purpose || ''}`.toLowerCase();
-    if (query && !searchable.includes(query)) return false;
-    if (activeFilter === 'owned') return department.id === 'jbnu-owned' || (department.id === 'jbnu-hpc' && server.id === 'tlion3');
-    if (['running', 'waiting', 'warning', 'done'].includes(activeFilter)) return server.status === activeFilter;
-    return true;
   }
 
   function spriteMarkup(server) {
@@ -55,72 +44,40 @@
   }
 
   function ensureLayout() {
-    document.body.classList.add('characters-only-layout');
+    document.body.classList.add('characters-only-layout', 'no-server-org');
+
     const workspace = document.querySelector('.workspace');
     const center = document.querySelector('.org-map-panel');
     const right = document.querySelector('.side-panel');
-    let left = document.getElementById('serverOrgSidebar');
+    if (!workspace || !center || !right) return;
 
-    if (!left) {
-      left = document.createElement('aside');
-      left.id = 'serverOrgSidebar';
-      left.className = 'server-org-sidebar';
-      left.innerHTML = `
-        <div class="server-sidebar-title">
-          <span class="eyebrow">SERVER CONTROL</span>
-          <h2>서버 조직도</h2>
-          <p>서버·계산·상태 정보는 이 사이드바에서 관리합니다.</p>
-        </div>
-        <div id="sidebarControlSlot" class="sidebar-control-slot"></div>
-        <nav id="serverOrgNav" class="server-org-nav"></nav>`;
-      workspace.insertBefore(left, center);
+    document.getElementById('serverOrgSidebar')?.remove();
+
+    let dock = document.getElementById('officeControlDock');
+    if (!dock) {
+      dock = document.createElement('div');
+      dock.id = 'officeControlDock';
+      dock.className = 'office-control-dock';
+      dock.setAttribute('aria-label', '영섭랜드 빠른 조작');
+      center.appendChild(dock);
     }
 
-    const controlSlot = document.getElementById('sidebarControlSlot');
-    ['.connection-cluster', '.top-actions', '.status-strip', '.command-toolbar'].forEach(selector => {
-      const element = document.querySelector(selector);
-      if (element && !controlSlot.contains(element)) controlSlot.appendChild(element);
-    });
+    const connection = document.querySelector('.connection-cluster');
+    const status = document.querySelector('.status-strip');
+    const addTask = document.getElementById('addTaskBtn');
+    if (connection && !dock.contains(connection)) dock.appendChild(connection);
+    if (status && !dock.contains(status)) dock.appendChild(status);
+    if (addTask && !dock.contains(addTask)) dock.appendChild(addTask);
 
     const eventConsole = document.querySelector('.event-console');
     if (eventConsole && !right.contains(eventConsole)) right.appendChild(eventConsole);
 
-    document.querySelector('.panel-heading')?.classList.add('layout-hidden');
-    document.querySelector('.executive-row')?.classList.add('layout-hidden');
-    document.querySelector('.office-tools-floor')?.classList.add('layout-hidden');
-    document.querySelector('.connector.trunk')?.classList.add('layout-hidden');
     document.querySelector('.topbar')?.classList.add('layout-hidden');
-  }
-
-  function renderSidebar() {
-    const nav = document.getElementById('serverOrgNav');
-    if (!nav) return;
-
-    nav.innerHTML = orderedDepartments().map(department => {
-      const servers = (department.servers || []).filter(server => matchesFilter(server, department));
-      return `
-        <section class="sidebar-department">
-          <div class="sidebar-department-heading">
-            <span><strong>${escapeHtml(department.name)}</strong><small>${escapeHtml(department.manager || '')}</small></span>
-            <em>${(department.servers || []).length}</em>
-          </div>
-          ${department.restricted ? '<div class="sidebar-special">glion1 · glion2 · GPU 사용 제외</div>' : ''}
-          ${department.empty ? '<div class="sidebar-special">UNIST · 2026.09 입주 예정</div>' : ''}
-          <div class="sidebar-server-list">
-            ${servers.map(server => `
-              <button type="button" class="sidebar-server ${selectedServerId === server.id ? 'selected' : ''}" data-server-id="${escapeHtml(server.id)}">
-                <i class="dot ${escapeHtml(server.status)}"></i>
-                <span><strong>${escapeHtml(server.id)} · ${escapeHtml(server.name)}</strong><small>${escapeHtml(server.job || '할당된 계산 없음')}</small></span>
-                <em>${escapeHtml(statusText[server.status] || '미확인')}</em>
-              </button>`).join('')}
-            ${!department.restricted && !department.empty && !servers.length ? '<div class="sidebar-special">현재 필터에 해당하는 서버 없음</div>' : ''}
-          </div>
-        </section>`;
-    }).join('');
-
-    nav.querySelectorAll('.sidebar-server').forEach(button => {
-      button.addEventListener('click', () => selectServer(button.dataset.serverId));
-    });
+    document.querySelector('.panel-heading')?.remove();
+    document.querySelector('.command-toolbar')?.remove();
+    document.querySelector('.executive-row')?.remove();
+    document.querySelector('.office-tools-floor')?.remove();
+    document.querySelector('.connector.trunk')?.remove();
   }
 
   function characterMarkup(server) {
@@ -136,7 +93,7 @@
   }
 
   function departmentPartitionMarkup(department) {
-    const servers = (department.servers || []).filter(server => matchesFilter(server, department));
+    const servers = department.servers || [];
     if (department.restricted || department.empty || !servers.length) return '';
     return `
       <section class="department-partition" data-department-id="${escapeHtml(department.id)}">
@@ -211,43 +168,18 @@
 
   function renderEverything() {
     ensureLayout();
-    renderSidebar();
     renderCenter();
     if (typeof updateCounters === 'function') updateCounters();
     if (typeof populateServerSelect === 'function') populateServerSelect();
   }
 
-  function bindFilterControls() {
-    const search = document.getElementById('serverSearchInput');
-    if (search && !search.dataset.characterLayoutBound) {
-      search.dataset.characterLayoutBound = 'true';
-      search.addEventListener('input', () => { renderSidebar(); renderCenter(); });
-    }
-
-    document.querySelectorAll('.filter-btn').forEach(button => {
-      if (button.dataset.characterLayoutBound) return;
-      button.dataset.characterLayoutBound = 'true';
-      button.addEventListener('click', () => {
-        activeFilter = button.dataset.filter || 'all';
-        document.querySelectorAll('.filter-btn').forEach(item => item.classList.toggle('active', item === button));
-        renderSidebar();
-        renderCenter();
-      });
-    });
-  }
-
   function verifyLayout() {
     const checks = [
-      document.querySelector('.topbar')?.classList.contains('layout-hidden'),
-      document.querySelector('.workspace')?.children[0]?.id === 'serverOrgSidebar',
-      document.querySelector('.department-partition-grid') !== null,
-      document.querySelectorAll('.department-partition').length > 1,
-      document.querySelectorAll('.character-desk').length === 0,
-      document.querySelectorAll('.owner-desk').length === 0,
-      document.querySelectorAll('.office-back-wall').length === 0,
-      document.querySelectorAll('.office-props').length === 0,
-      document.querySelectorAll('.office-character .character-name').length > 0,
-      document.querySelectorAll('.talking-character .speech-bubble').length > 0
+      document.getElementById('serverOrgSidebar') === null,
+      document.querySelector('.workspace')?.children[0]?.classList.contains('org-map-panel'),
+      document.querySelector('.character-office-world') !== null,
+      document.querySelector('.org-map-panel')?.getBoundingClientRect().top === 0,
+      document.querySelector('.office-control-dock') !== null
     ];
     if (checks.some(check => !check)) console.warn('YS Empire layout verification failed', checks);
   }
@@ -258,11 +190,9 @@
     const originalSelectServer = selectServer;
     selectServer = function patchedSelectServer(id) {
       originalSelectServer(id);
-      renderSidebar();
       renderCenter();
     };
     renderDepartments();
-    bindFilterControls();
     requestAnimationFrame(verifyLayout);
   }
 
