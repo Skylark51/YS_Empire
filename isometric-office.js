@@ -16,10 +16,6 @@
     ];
   }
 
-  function serverDepartment(serverId) {
-    return departments.find(department => (department.servers || []).some(server => server.id === serverId));
-  }
-
   function matchesFilter(server, department) {
     const query = (document.getElementById('serverSearchInput')?.value || '').trim().toLowerCase();
     const searchable = `${server.id} ${server.name} ${server.role || ''} ${server.project || ''} ${server.job || ''} ${server.purpose || ''}`.toLowerCase();
@@ -112,14 +108,13 @@
     });
   }
 
-  function characterMarkup(server, department) {
+  function characterMarkup(server) {
     return `
       <button type="button" class="office-character ${selectedServerId === server.id ? 'selected' : ''}"
               data-server-id="${escapeHtml(server.id)}" data-status="${escapeHtml(server.status)}"
-              title="${escapeHtml(server.id)} · ${escapeHtml(server.name)}">
+              aria-label="${escapeHtml(server.id)} ${escapeHtml(server.name)} 서버 선택">
         <span class="character-desk" aria-hidden="true"><i></i><b></b></span>
         <span class="character-body">${spriteMarkup(server)}</span>
-        <span class="character-status-light ${escapeHtml(server.status)}" aria-label="${escapeHtml(statusText[server.status] || '미확인')}"></span>
       </button>`;
   }
 
@@ -131,7 +126,7 @@
     orderedDepartments().forEach(department => {
       if (department.restricted || department.empty) return;
       (department.servers || []).forEach(server => {
-        if (matchesFilter(server, department)) visibleServers.push({ server, department });
+        if (matchesFilter(server, department)) visibleServers.push(server);
       });
     });
 
@@ -140,18 +135,18 @@
       <div class="character-office-world" aria-label="영섭랜드 픽셀 캐릭터 오피스">
         <div class="office-back-wall" aria-hidden="true">
           <span class="office-window one"></span><span class="office-window two"></span><span class="office-window three"></span>
-          <span class="office-clock"></span><span class="office-logo">YS EMPIRE</span>
+          <span class="office-clock"></span>
         </div>
         <div class="owner-station">
           <span class="owner-desk" aria-hidden="true"></span>
           <img src="assets/characters/ceo-youngseop.png" alt="이영섭 대표" />
         </div>
         <div class="all-character-floor">
-          ${visibleServers.map(({ server, department }) => characterMarkup(server, department)).join('')}
+          ${visibleServers.map(characterMarkup).join('')}
         </div>
         <div class="research-character-row">
-          <a href="research-tools.html#parserPanel" title="로건 · Gaussian Output Parser"><span class="tool-character tool-character-logan"></span></a>
-          <a href="research-tools.html#siPanel" title="세라 · SI Generator"><span class="tool-character tool-character-sarah"></span></a>
+          <a href="research-tools.html#parserPanel" aria-label="로건 Gaussian Output Parser"><span class="tool-character tool-character-logan"></span></a>
+          <a href="research-tools.html#siPanel" aria-label="세라 SI Generator"><span class="tool-character tool-character-sarah"></span></a>
         </div>
         <div class="office-props" aria-hidden="true"><i class="plant-left"></i><i class="plant-right"></i><i class="meeting-table"></i></div>
       </div>`;
@@ -192,19 +187,23 @@
   }
 
   function verifyLayout() {
+    const expectedVisibleCount = orderedDepartments().reduce((count, department) => {
+      if (department.restricted || department.empty) return count;
+      return count + (department.servers || []).filter(server => matchesFilter(server, department)).length;
+    }, 0);
     const checks = [
       document.querySelector('.workspace')?.children[0]?.id === 'serverOrgSidebar',
       document.querySelector('.org-map-panel .panel-heading')?.classList.contains('layout-hidden'),
       document.querySelector('.org-map-panel .command-toolbar') === null,
+      document.querySelector('.sidebar-control-slot .command-toolbar') !== null,
       document.querySelector('.characters-only-grid') !== null,
-      document.querySelector('.character-office-world') !== null,
-      document.querySelectorAll('.office-character').length > 0,
-      document.querySelectorAll('.office-character .visible-server-label').length === 0,
+      document.querySelectorAll('.office-character').length === expectedVisibleCount,
+      document.querySelectorAll('.office-character title').length === 0,
+      document.querySelectorAll('.character-status-light').length === 0,
       document.querySelector('.side-panel .detail-card') !== null,
-      document.querySelector('.side-panel .todo-card') !== null,
       document.querySelector('.side-panel .event-console') !== null
     ];
-    if (checks.some(check => !check)) console.warn('YS Empire layout verification failed', checks);
+    if (checks.some(check => !check)) console.warn('YS Empire 10-point layout verification failed', checks);
   }
 
   function install() {
