@@ -1,0 +1,127 @@
+.office-filter-tools {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  padding-left: 6px;
+  border-left: 1px solid var(--line);
+}
+
+.office-search-box {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  width: 190px;
+  min-width: 120px;
+  color: var(--muted);
+}
+
+.office-search-box input {
+  min-width: 0;
+  height: 34px;
+  padding: 7px 9px;
+  font-size: 10px;
+}
+
+.office-status-filter {
+  width: 98px;
+  height: 34px;
+  padding: 6px 8px;
+  font-size: 9px;
+}
+
+.office-visible-count {
+  color: var(--muted);
+  font-size: 8px;
+  white-space: nowrap;
+}
+
+.agent-setup-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 34px;
+  padding: 0 9px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--panel-2);
+  color: var(--text);
+  font-size: 9px;
+  font-weight: 800;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.agent-setup-link:hover {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--focus-ring);
+}
+
+.office-status-dot {
+  position: absolute;
+  z-index: 12;
+  top: 24px;
+  right: 12px;
+  width: 10px;
+  height: 10px;
+  border: 2px solid var(--name-bg);
+  border-radius: 50%;
+  background: var(--waiting);
+  box-shadow: 0 0 8px currentColor;
+}
+
+.office-status-dot.running { color: var(--running); background: var(--running); }
+.office-status-dot.waiting { color: var(--waiting); background: var(--waiting); }
+.office-status-dot.warning { color: var(--warning); background: var(--warning); }
+.office-status-dot.done { color: var(--done); background: var(--done); }
+
+.office-character.status-running .character-body {
+  animation: liveWorkerPulse 1.15s steps(2, end) infinite;
+}
+
+.office-character.status-warning .character-name {
+  border-color: color-mix(in srgb, var(--warning) 68%, var(--partition-line));
+}
+
+.office-character.status-done .character-body {
+  filter: drop-shadow(0 0 5px color-mix(in srgb, var(--done) 55%, transparent));
+}
+
+@keyframes liveWorkerPulse {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(2px); }
+}
+
+html[data-theme="light"] .office-control-dock {
+  background: rgba(255, 255, 255, .92);
+  box-shadow: 0 14px 32px rgba(58, 82, 108, .18);
+}
+
+html[data-theme="light"] .department-partition,
+html[data-theme="light"] .owner-partition {
+  box-shadow: 0 10px 25px rgba(72, 78, 84, .10);
+}
+
+html[data-theme="light"] .characters-only-layout .side-panel {
+  background: rgba(239, 245, 251, .96);
+}
+
+html[data-theme="light"] .detail-card,
+html[data-theme="light"] .todo-card,
+html[data-theme="light"] .event-console {
+  box-shadow: 0 8px 22px rgba(55, 82, 108, .10);
+}
+
+@media (max-width: 1450px) {
+  .office-filter-tools { display: none; }
+}
+
+@media (max-width: 700px) {
+  .office-control-dock {
+    right: 10px;
+    left: 10px;
+    bottom: 10px;
+    max-width: none !important;
+    flex-wrap: wrap;
+  }
+}
