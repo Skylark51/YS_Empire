@@ -32,6 +32,26 @@ class AgentTests(unittest.TestCase):
         self.assertEqual(result["summary"]["nodes_total"], 2)
         self.assertEqual(result["summary"]["offline"], 2)
 
+    def test_run_collection_recovers_after_failure(self) -> None:
+        config = {
+            "api_token": "test-token-long-enough",
+            "nodes": [{"id": "lion28", "ssh_alias": "lion28"}],
+        }
+        with tempfile.TemporaryDirectory() as directory:
+            store = JsonStore(Path(directory))
+            with patch("agent.collect", side_effect=[RuntimeError("gateway down"), {
+                "schema_version": "2.0",
+                "generated_at": "recovered",
+                "summary": {},
+                "nodes": [],
+            }]):
+                self.assertFalse(agent.run_collection(config, store))
+                self.assertTrue(agent.run_collection(config, store))
+        status = agent.runtime_status(config)
+        self.assertTrue(status["ready"])
+        self.assertEqual(status["last_success_at"], "recovered")
+        self.assertEqual(status["consecutive_failures"], 0)
+
 
 if __name__ == "__main__":
     unittest.main()
