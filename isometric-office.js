@@ -7,6 +7,7 @@
   const statusText = { waiting: '대기', running: '계산중', warning: '확인필요', done: '완료' };
   const preferredOrder = ['jbnu-owned', 'jbnu-hpc', 'jbnu-borrowed', 'ai', 'ewha', 'gpu-restricted', 'unist'];
   let activeDepartmentId = localStorage.getItem('ys-active-department') || 'jbnu-owned';
+  let sidebarQuery = '';
 
   function orderedDepartments() {
     const map = new Map(departments.map(dept => [dept.id, dept]));
@@ -23,12 +24,12 @@
 
   function spriteMarkup(server) {
     if (server.avatar) {
-      return `<img src="assets/characters/${escapeHtml(server.avatar)}" alt="${escapeHtml(server.name)}" />`;
+      return `<img src="assets/characters/${escapeHtml(server.avatar)}" alt="" />`;
     }
     if (server.spriteGroup && typeof spriteStyle === 'function') {
-      return `<span class="character-sprite" style="${spriteStyle(server)}" role="img" aria-label="${escapeHtml(server.name)}"></span>`;
+      return `<span class="character-sprite" style="${spriteStyle(server)}" aria-hidden="true"></span>`;
     }
-    return '<span class="worker-fallback">?</span>';
+    return '<span class="worker-fallback" aria-hidden="true">?</span>';
   }
 
   function ensureSidebar() {
@@ -38,40 +39,33 @@
     sidebar.id = 'serverOrgSidebar';
     sidebar.className = 'server-org-sidebar';
     const workspace = document.querySelector('.workspace');
-    const main = document.querySelector('.org-map-panel');
-    workspace.insertBefore(sidebar, main);
+    const center = document.querySelector('.org-map-panel');
+    workspace.insertBefore(sidebar, center);
     return sidebar;
   }
 
   function renderSidebar() {
     const sidebar = ensureSidebar();
-    const query = (document.getElementById('serverSearchInput')?.value || '').trim().toLowerCase();
     sidebar.innerHTML = `
       <div class="server-sidebar-header">
         <span class="eyebrow">SERVER ORGANIZATION</span>
         <h2>서버 조직도</h2>
-        <p>부서를 선택하면 중앙 화면에 해당 부서만 표시됩니다.</p>
+        <label class="sidebar-search">
+          <span>⌕</span>
+          <input id="sidebarServerSearch" type="search" value="${escapeHtml(sidebarQuery)}" placeholder="서버·계산 검색" autocomplete="off" />
+        </label>
       </div>
       <nav class="server-org-nav">
         ${orderedDepartments().map(dept => {
           const servers = dept.servers || [];
-          const matching = servers.filter(server => !query || `${server.id} ${server.name} ${server.project} ${server.job}`.toLowerCase().includes(query));
-          const isActive = dept.id === activeDepartmentId;
-          const counts = servers.reduce((acc, server) => {
-            acc[server.status] = (acc[server.status] || 0) + 1;
-            return acc;
-          }, {});
+          const matching = servers.filter(server => !sidebarQuery || `${server.id} ${server.name} ${server.project} ${server.job}`.toLowerCase().includes(sidebarQuery));
+          const active = dept.id === activeDepartmentId;
           return `
-            <section class="org-nav-group ${isActive ? 'active' : ''}" data-department-id="${escapeHtml(dept.id)}">
+            <section class="org-nav-group ${active ? 'active' : ''}">
               <button class="org-department-btn" type="button" data-department-id="${escapeHtml(dept.id)}">
                 <span><strong>${escapeHtml(dept.name)}</strong><small>${escapeHtml(dept.manager || '')}</small></span>
                 <em>${servers.length}</em>
               </button>
-              <div class="org-mini-status">
-                ${counts.running ? `<span class="running">${counts.running} 계산중</span>` : ''}
-                ${counts.warning ? `<span class="warning">${counts.warning} 확인</span>` : ''}
-                ${counts.waiting ? `<span>${counts.waiting} 대기</span>` : ''}
-              </div>
               <div class="org-server-list">
                 ${dept.restricted ? '<div class="org-special-row">glion1 · glion2 · 사용 제외</div>' : ''}
                 ${dept.empty ? '<div class="org-special-row">2026.09 입주 예정</div>' : ''}
@@ -82,11 +76,21 @@
                     <span><strong>${escapeHtml(server.id)}</strong><small>${escapeHtml(server.name)}</small></span>
                     <em>${escapeHtml(statusText[server.status] || '미확인')}</em>
                   </button>`).join('')}
-                ${query && !matching.length && !dept.restricted && !dept.empty ? '<div class="org-special-row">검색 결과 없음</div>' : ''}
+                ${sidebarQuery && !matching.length && !dept.restricted && !dept.empty ? '<div class="org-special-row">검색 결과 없음</div>' : ''}
               </div>
             </section>`;
         }).join('')}
       </nav>`;
+
+    sidebar.querySelector('#sidebarServerSearch')?.addEventListener('input', event => {
+      sidebarQuery = event.target.value.trim().toLowerCase();
+      renderSidebar();
+      requestAnimationFrame(() => {
+        const input = document.getElementById('sidebarServerSearch');
+        input?.focus();
+        input?.setSelectionRange(input.value.length, input.value.length);
+      });
+    });
 
     sidebar.querySelectorAll('.org-department-btn').forEach(button => {
       button.addEventListener('click', () => {
@@ -95,6 +99,7 @@
         renderDepartments();
       });
     });
+
     sidebar.querySelectorAll('.org-server-row').forEach(button => {
       button.addEventListener('click', () => {
         activeDepartmentId = button.dataset.departmentId;
@@ -104,93 +109,85 @@
     });
   }
 
-  function workstationMarkup(server) {
+  function characterSeat(server, index) {
+    const selected = selectedServerId === server.id;
+    const title = `${server.id} · ${server.name} · ${statusText[server.status] || '미확인'} · ${server.job || ''}`;
     return `
-      <button class="server-card compact-workstation ${selectedServerId === server.id ? 'selected' : ''}" type="button"
-              data-server-id="${escapeHtml(server.id)}" data-status="${escapeHtml(server.status)}">
-        <span class="compact-desk" aria-hidden="true"><i></i><b></b></span>
-        <span class="compact-worker">${spriteMarkup(server)}</span>
-        <span class="compact-label">
-          <strong>${escapeHtml(server.id)}</strong>
-          <small>${escapeHtml(server.name)}</small>
-          <em>${escapeHtml(statusText[server.status] || '미확인')}</em>
-        </span>
-        <span class="compact-progress"><i style="width:${Number(server.progress) || 0}%"></i></span>
+      <button class="character-seat ${selected ? 'selected' : ''}" type="button"
+              data-server-id="${escapeHtml(server.id)}" data-status="${escapeHtml(server.status)}"
+              title="${escapeHtml(title)}" aria-label="${escapeHtml(title)}"
+              style="--seat-delay:${(index % 7) * -0.18}s">
+        <span class="pixel-desk" aria-hidden="true"><i></i><b></b></span>
+        <span class="pixel-chair" aria-hidden="true"></span>
+        <span class="pixel-worker">${spriteMarkup(server)}</span>
+        <i class="seat-status-lamp ${escapeHtml(server.status)}" aria-hidden="true"></i>
       </button>`;
   }
 
-  function specialStage(dept) {
+  function emptyStage(dept) {
     if (dept.restricted) {
-      return `<div class="special-stage"><div class="gpu-racks"><i></i><i></i></div><strong>glion1 · glion2</strong><p>GPU 전용 장비이므로 현재 조직에서 제외합니다.</p></div>`;
+      return '<div class="character-empty-stage"><span class="silent-rack"></span><span class="silent-rack"></span></div>';
     }
     if (dept.empty) {
-      return `<div class="special-stage"><div class="empty-desks"><i></i><i></i><i></i></div><strong>UNIST 확장 공간</strong><p>2026년 9월 직원과 서버가 입주할 예정입니다.</p></div>`;
+      return '<div class="character-empty-stage"><span class="silent-desk"></span><span class="silent-desk"></span><span class="silent-desk"></span></div>';
     }
     return '';
   }
 
-  function renderOffice() {
+  function renderCharacterOffice() {
     const grid = document.getElementById('departmentGrid');
     const dept = currentDepartment();
     if (!grid || !dept) return;
-    grid.className = 'department-grid compact-office-grid';
+    grid.className = 'department-grid character-office-grid';
     grid.innerHTML = `
-      <div class="compact-office-world">
-        <header class="compact-office-header">
-          <div><span class="eyebrow">ACTIVE DEPARTMENT</span><h2>${escapeHtml(dept.name)}</h2><p>${escapeHtml(dept.description || '')}</p></div>
-          <span class="department-seat-count">${(dept.servers || []).length}석</span>
-        </header>
-        <section class="compact-command-zone">
-          <div class="command-desk"></div>
-          <img src="assets/characters/ceo-youngseop.png" alt="이영섭 대표" />
-          <div><span>OWNER · COMMAND</span><strong>이영섭 대표</strong><small>선택 부서 지휘 중</small></div>
+      <div class="character-office-world">
+        <div class="office-wall" aria-hidden="true">
+          <span class="office-window one"></span>
+          <span class="office-window two"></span>
+          <span class="office-clock"></span>
+        </div>
+        <div class="office-floor" aria-hidden="true"></div>
+        <button class="ceo-character-seat" type="button" title="이영섭 대표" aria-label="이영섭 대표">
+          <span class="ceo-desk" aria-hidden="true"></span>
+          <img src="assets/characters/ceo-youngseop.png" alt="" />
+        </button>
+        <section class="character-only-floor" aria-label="선택 부서 캐릭터">
+          ${emptyStage(dept) || `<div class="character-seat-grid">${(dept.servers || []).map(characterSeat).join('')}</div>`}
         </section>
-        <section class="compact-department-floor">
-          ${specialStage(dept) || `<div class="compact-workstation-grid">${(dept.servers || []).map(workstationMarkup).join('')}</div>`}
-        </section>
-        <section class="compact-tools-strip">
-          <a href="research-tools.html#parserPanel"><span class="tool-character tool-character-logan"></span><strong>로건</strong><small>Output Parser</small></a>
-          <a href="research-tools.html#siPanel"><span class="tool-character tool-character-sarah"></span><strong>세라</strong><small>SI Generator</small></a>
-        </section>
+        <div class="tool-character-corner">
+          <a href="research-tools.html#parserPanel" title="로건 · Gaussian Output Parser" aria-label="로건 · Gaussian Output Parser"><span class="tool-character tool-character-logan"></span></a>
+          <a href="research-tools.html#siPanel" title="세라 · SI Generator" aria-label="세라 · SI Generator"><span class="tool-character tool-character-sarah"></span></a>
+        </div>
       </div>`;
-    grid.querySelectorAll('.compact-workstation').forEach(card => {
-      card.addEventListener('click', () => selectServer(card.dataset.serverId));
+
+    grid.querySelectorAll('.character-seat').forEach(seat => {
+      seat.addEventListener('click', () => selectServer(seat.dataset.serverId));
     });
   }
 
-  function renderCompactLayout() {
-    document.body.classList.add('compact-office-mode');
+  function renderLayout() {
+    document.body.classList.add('character-office-mode');
+    document.querySelector('.panel-heading')?.classList.add('hidden-by-layout');
+    document.querySelector('.command-toolbar')?.classList.add('hidden-by-layout');
     document.querySelector('.executive-row')?.classList.add('hidden-by-layout');
     document.querySelector('.office-tools-floor')?.classList.add('hidden-by-layout');
     document.querySelector('.connector.trunk')?.classList.add('hidden-by-layout');
-    const heading = document.querySelector('.org-map-panel .panel-heading h2');
-    const desc = document.querySelector('.org-map-panel .panel-heading p');
-    if (heading) heading.textContent = '선택 부서 오피스';
-    if (desc) desc.textContent = '전체 조직은 왼쪽 사이드바에서 선택하고, 중앙에는 한 부서만 표시합니다.';
     renderSidebar();
-    renderOffice();
+    renderCharacterOffice();
     if (typeof updateCounters === 'function') updateCounters();
     if (typeof populateServerSelect === 'function') populateServerSelect();
   }
 
-  function installSearchSync() {
-    const input = document.getElementById('serverSearchInput');
-    if (!input || input.dataset.sidebarBound) return;
-    input.dataset.sidebarBound = 'true';
-    input.addEventListener('input', renderSidebar);
-  }
-
   function install() {
     if (typeof departments === 'undefined' || typeof renderDepartments !== 'function') return;
-    renderDepartments = renderCompactLayout;
+    renderDepartments = renderLayout;
     const originalSelectServer = selectServer;
     selectServer = function patchedSelectServer(id) {
       originalSelectServer(id);
       renderSidebar();
-      renderOffice();
+      renderCharacterOffice();
     };
     renderDepartments();
-    installSearchSync();
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', install, { once: true });
