@@ -54,6 +54,38 @@
     }
   }
 
+  async function saveNote(nodeId, text, timeoutMs = 6000) {
+    if (!state.connected || !state.token) throw new Error('Lion Agent에 먼저 연결해 주세요.');
+    if (!/^(?:t?lion)\d+$/i.test(nodeId)) throw new Error('메모를 저장할 수 없는 서버입니다.');
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const response = await fetch(`${state.endpoint}/api/notes/${encodeURIComponent(nodeId)}`, {
+        method: 'PUT',
+        headers: {
+          Accept: 'application/json',
+          Authorization: `Bearer ${state.token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ text }),
+        signal: controller.signal,
+        cache: 'no-store'
+      });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const saved = await response.json();
+      await refreshLive({ quiet: true });
+      return saved;
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  function notifyConnectionState() {
+    document.dispatchEvent(new CustomEvent('ys:connection-state', {
+      detail: { connected: state.connected, writable: state.connected && Boolean(state.token) }
+    }));
+  }
+
   function findServer(id) {
     for (const department of departments) {
       const server = department.servers.find(item => item.id === id);
@@ -100,6 +132,7 @@
     }
     state.lastSync = snapshot.generated_at || new Date().toISOString();
     state.connected = true;
+    notifyConnectionState();
     renderDepartments();
     if (selectedServerId) selectServer(selectedServerId);
     applyFilters();
@@ -117,6 +150,7 @@
       return true;
     } catch (error) {
       state.connected = false;
+      notifyConnectionState();
       setConnectionUi('offline', `연결 실패 · ${error.name === 'AbortError' ? '시간 초과' : error.message}`);
       if (!quiet) addLog('Lion Agent', `연결 실패: ${error.message}`);
       return false;
@@ -199,6 +233,7 @@
     clearInterval(state.pollTimer);
     state.connected = false;
     state.token = '';
+    notifyConnectionState();
     sessionStorage.removeItem('ys-agent-token');
     setConnectionUi('offline', 'Lion Agent 미연결');
     addLog('Lion Agent', '실시간 연결을 해제했습니다.');
@@ -244,6 +279,12 @@
 
   const observer = new MutationObserver(() => applyFilters());
   observer.observe($('departmentGrid'), { childList: true });
+
+  globalThis.YSLiveAgent = Object.freeze({
+    saveNote,
+    canSaveNotes: () => state.connected && Boolean(state.token),
+    refresh: () => refreshLive()
+  });
 
   if (state.token) refreshLive({ quiet: true }).then(ok => { if (ok) schedulePolling(); });
 })();

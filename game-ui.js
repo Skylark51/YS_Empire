@@ -250,10 +250,10 @@
         <div><dt>경과 시간</dt><dd id="gameDetailElapsed">-</dd></div>
         <div><dt>종료 여부</dt><dd id="gameDetailTermination">-</dd></div>
       </dl>
-      <div class="server-memo-disabled" aria-describedby="memoBackendNotice">
+      <div class="server-memo-editor" aria-describedby="memoBackendNotice">
         <label for="serverMemoInput">캐릭터 메모</label>
-        <textarea id="serverMemoInput" rows="2" disabled placeholder="백엔드 메모 저장 API가 준비되면 사용할 수 있습니다."></textarea>
-        <div><small id="memoBackendNotice">백엔드 저장 API 대기 · 현재 /api/status의 읽기 전용 메모만 표시</small><button id="saveServerMemoBtn" type="button" class="btn secondary" disabled>저장</button></div>
+        <textarea id="serverMemoInput" rows="2" maxlength="4000" placeholder="현재 계산과 다음에 돌릴 계산을 기록하세요."></textarea>
+        <div><small id="memoBackendNotice">Lion Agent에 연결하면 서버에 저장됩니다.</small><button id="saveServerMemoBtn" type="button" class="btn secondary" disabled>저장</button></div>
       </div>`;
     content.insertBefore(section, actions);
   }
@@ -261,6 +261,42 @@
   function setText(id, value) {
     const element = document.getElementById(id);
     if (element) element.textContent = value;
+  }
+
+  function updateMemoControls(id) {
+    const input = document.getElementById('serverMemoInput');
+    const button = document.getElementById('saveServerMemoBtn');
+    const notice = document.getElementById('memoBackendNotice');
+    const supported = /^(?:t?lion)\d+$/i.test(id || '');
+    const writable = supported && Boolean(globalThis.YSLiveAgent?.canSaveNotes?.());
+    if (input) input.disabled = !supported;
+    if (button) button.disabled = !writable;
+    if (notice && !writable) {
+      notice.textContent = supported ? 'Lion Agent에 연결하면 서버에 저장됩니다.' : 'Lion 서버에서만 메모를 저장할 수 있습니다.';
+    }
+  }
+
+  async function saveSelectedMemo() {
+    const id = typeof selectedServerId !== 'undefined' ? selectedServerId : '';
+    const input = document.getElementById('serverMemoInput');
+    const button = document.getElementById('saveServerMemoBtn');
+    const notice = document.getElementById('memoBackendNotice');
+    if (!input || !button || !globalThis.YSLiveAgent?.saveNote) return;
+    button.disabled = true;
+    if (notice) notice.textContent = '메모 저장 중…';
+    try {
+      const saved = await globalThis.YSLiveAgent.saveNote(id, input.value);
+      const node = findNode(id);
+      if (node) {
+        node.memo = saved.memo;
+        node.note = { text: saved.memo, updated_at: saved.updated_at };
+      }
+      if (notice) notice.textContent = '서버에 저장되었습니다.';
+    } catch (error) {
+      if (notice) notice.textContent = `저장 실패 · ${error.message}`;
+    } finally {
+      updateMemoControls(id);
+    }
   }
 
   function updateDetail(id) {
@@ -283,7 +319,8 @@
     setText('gameDetailTermination', detail.termination);
     const memo = getMemo(node, id);
     const input = document.getElementById('serverMemoInput');
-    if (input) input.value = memo;
+    if (input && document.activeElement !== input) input.value = memo;
+    updateMemoControls(id);
     const detailBadge = document.getElementById('detailStatusBadge');
     if (detailBadge && /^(?:t?lion)\d+$/i.test(id)) {
       detailBadge.textContent = STATE_LABELS[gameState];
@@ -304,6 +341,10 @@
     installed = true;
     ensureOrgTree();
     ensureDetailPanel();
+    document.getElementById('saveServerMemoBtn')?.addEventListener('click', saveSelectedMemo);
+    document.addEventListener('ys:connection-state', () => {
+      if (typeof selectedServerId !== 'undefined') updateMemoControls(selectedServerId);
+    });
 
     if (typeof renderDepartments === 'function') {
       const priorRender = renderDepartments;
