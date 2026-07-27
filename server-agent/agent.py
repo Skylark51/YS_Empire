@@ -25,6 +25,15 @@ CACHE: dict[str, Any] = {"schema_version": "2.0", "generated_at": None,
 CACHE_LOCK = threading.RLock()
 STOP_EVENT = threading.Event()
 STORE: JsonStore | None = None
+COLLECT_LOCK = threading.Lock()
+RUNTIME_LOCK = threading.RLock()
+RUNTIME: dict[str, Any] = {
+    "collecting": False,
+    "last_attempt_at": None,
+    "last_success_at": None,
+    "last_error": None,
+    "consecutive_failures": 0,
+}
 
 # 1. config.json is read, never written.
 def load_config() -> dict[str, Any]:
@@ -100,13 +109,48 @@ def collect(config: dict[str, Any], store: JsonStore | None = None) -> dict[str,
     store.write_cache(snapshot)
     return snapshot
 
-def collector_loop(config: dict[str, Any], store: JsonStore) -> None:
-    interval = max(5, int(config.get("collect_interval_seconds", 10)))
-    while not STOP_EVENT.is_set():
+def run_collection(config: dict[str, Any], store: JsonStore) -> bool:
+    """Run one collection without overlap or service death on transient failure."""
+    if not COLLECT_LOCK.acquire(blocking=False):
+        return False
+    with RUNTIME_LOCK:
+        RUNTIME["collecting"] = True
+        RUNTIME["last_attempt_at"] = iso_now()
+    try:
         snapshot = collect(config, store)
         with CACHE_LOCK:
             CACHE.clear()
             CACHE.update(snapshot)
+        with RUNTIME_LOCK:
+            RUNTIME["last_success_at"] = snapshot["generated_at"]
+            RUNTIME["last_error"] = None
+            RUNTIME["consecutive_failures"] = 0
+        return True
+    except Exception as exc:
+        with RUNTIME_LOCK:
+            RUNTIME["last_error"] = str(exc)
+            RUNTIME["consecutive_failures"] += 1
+        print(f"Collection failed; retrying on the next interval: {exc}")
+        return False
+    finally:
+        with RUNTIME_LOCK:
+            RUNTIME["collecting"] = False
+        COLLECT_LOCK.release()
+
+
+def runtime_status(config: dict[str, Any]) -> dict[str, Any]:
+    interval = max(5, int(config.get("collect_interval_seconds", 10)))
+    with RUNTIME_LOCK:
+        payload = dict(RUNTIME)
+    payload["interval_seconds"] = interval
+    payload["ready"] = payload["last_success_at"] is not None
+    return payload
+
+
+def collector_loop(config: dict[str, Any], store: JsonStore) -> None:
+    interval = max(5, int(config.get("collect_interval_seconds", 10)))
+    while not STOP_EVENT.is_set():
+        run_collection(config, store)
         STOP_EVENT.wait(interval)
 
 # 3. /api/status carries full detail and the old UI compatibility fields.
@@ -120,7 +164,7 @@ class Handler(BaseHTTPRequestHandler):
             self.send_header("Access-Control-Allow-Origin", origin)
             self.send_header("Vary", "Origin")
         self.send_header("Access-Control-Allow-Headers", "Authorization, Content-Type")
-        self.send_header("Access-Control-Allow-Methods", "GET, PUT, DELETE, OPTIONS")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
         self.send_header("Cache-Control", "no-store")
         self.send_header("X-Content-Type-Options", "nosniff")
         super().end_headers()
@@ -132,7 +176,11 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self) -> None:
         path = urlparse(self.path).path
         if path == "/api/health":
-            self.respond(200, {"ok": True, "service": "YS Lion Agent", "version": "2.1.0"})
+            runtime = runtime_status(self.server.config)
+            self.respond(200, {
+                "ok": True, "service": "YS Lion Agent", "version": "2.2.0",
+                "ready": runtime["ready"], "collector": runtime,
+            })
             return
         if not self.authorised():
             self.respond(401, {"error": "invalid token"})
@@ -146,6 +194,31 @@ class Handler(BaseHTTPRequestHandler):
             self.respond(200, {"notes": self.note_store().notes_by_node()})
             return
         self.respond(404, {"error": "not found"})
+
+    def do_POST(self) -> None:
+        if not self.authorised():
+            self.respond(401, {"error": "invalid token"})
+            return
+        if urlparse(self.path).path != "/api/refresh":
+            self.respond(404, {"error": "not found"})
+            return
+        if COLLECT_LOCK.locked():
+            self.respond(409, {
+                "error": "collection already in progress",
+                "collector": runtime_status(self.server.config),
+            })
+            return
+        threading.Thread(
+            target=run_collection,
+            args=(self.server.config, self.note_store()),
+            daemon=True,
+            name="manual-refresh",
+        ).start()
+        self.respond(202, {
+            "accepted": True,
+            "status_url": "/api/status",
+            "health_url": "/api/health",
+        })
 
     def do_PUT(self) -> None:
         if not self.authorised():
