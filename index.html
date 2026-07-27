@@ -9,14 +9,14 @@
   <link rel="stylesheet" href="live.css?v=20260727-03" />
   <link rel="stylesheet" href="game-ui.css?v=20260727-03" />
   <link rel="stylesheet" href="research-tools.css?v=20260727-03" />
-  <link rel="stylesheet" href="isometric-office.css?v=20260727-10" />
+  <link rel="stylesheet" href="isometric-office.css?v=20260727-11" />
 </head>
-<body class="characters-only-layout">
+<body class="characters-only-layout no-server-org">
   <div class="app-shell">
     <header class="topbar layout-hidden">
       <div class="brand">
         <div class="brand-mark">YS</div>
-        <div><h1>영섭랜드 서버 관제실 <small>v1.10</small></h1></div>
+        <div><h1>영섭랜드 서버 관제실 <small>v1.11</small></h1></div>
       </div>
       <div class="connection-cluster" aria-label="실시간 연결 상태">
         <button id="connectionBtn" class="connection-button" type="button"><span id="connectionDot" class="connection-dot offline"></span><span><strong id="connectionLabel">샘플 데이터</strong><small id="lastSyncLabel">Lion Agent 미연결</small></span></button>
@@ -28,26 +28,24 @@
         <div class="speed-group" aria-label="샘플 진행 속도"><button data-speed="1" class="speed-btn active">1×</button><button data-speed="2" class="speed-btn">2×</button><button data-speed="4" class="speed-btn">4×</button></div>
         <button id="addTaskBtn" class="btn primary">+ 새 계산 등록</button>
       </div>
-      <div class="status-strip"><span><i class="dot waiting"></i>대기 <b id="countWaiting">0</b></span><span><i class="dot running"></i>계산중 <b id="countRunning">0</b></span><span><i class="dot warning"></i>확인필요 <b id="countWarning">0</b></span><span><i class="dot done"></i>완료 <b id="countDone">0</b></span></div>
+      <div class="status-strip">
+        <span><i class="dot waiting"></i>대기 <b id="countWaiting">0</b></span>
+        <span><i class="dot running"></i>계산중 <b id="countRunning">0</b></span>
+        <span><i class="dot warning"></i>확인필요 <b id="countWarning">0</b></span>
+        <span><i class="dot done"></i>완료 <b id="countDone">0</b></span>
+        <span class="hidden"><b id="totalJobs">0</b></span>
+      </div>
     </header>
 
     <main class="workspace">
-      <section class="org-map-panel">
-        <div class="panel-heading"><div><h2>오늘의 계산 사무실</h2><p>직원이 일하는 자리를 클릭하면 담당 서버와 현재 계산을 확인할 수 있습니다.</p></div></div>
-        <div class="command-toolbar" aria-label="서버 검색 및 필터">
-          <label class="search-box"><span>⌕</span><input id="serverSearchInput" type="search" placeholder="서버, 직원, 계산 파일, 프로젝트 검색" autocomplete="off" /></label>
-          <div id="filterButtons" class="filter-buttons"><button class="filter-btn active" data-filter="all">전체</button><button class="filter-btn" data-filter="owned">내 서버</button><button class="filter-btn" data-filter="running">계산중</button><button class="filter-btn" data-filter="waiting">대기</button><button class="filter-btn" data-filter="warning">확인필요</button></div>
-          <span id="visibleServerCount" class="visible-count">0대 표시</span>
-        </div>
-        <div class="executive-row"></div>
-        <section class="office-tools-floor"></section>
-        <div class="connector trunk"></div><div id="departmentGrid" class="department-grid"></div>
+      <section class="org-map-panel" aria-label="영섭랜드 중앙 캐릭터 화면">
+        <div id="departmentGrid" class="department-grid"></div>
       </section>
 
       <aside class="side-panel">
         <section class="detail-card">
           <div class="section-title-row"><div><span class="eyebrow">선택 서버</span><h2 id="detailServerName">서버를 선택하세요</h2></div><span id="detailStatusBadge" class="badge neutral">미선택</span></div>
-          <div id="emptyDetail" class="empty-state">캐릭터나 서버 목록을 클릭하면 노드, 계산 파일, 진행률, 예상 종료시각을 표시합니다.</div>
+          <div id="emptyDetail" class="empty-state">캐릭터를 클릭하면 노드, 계산 파일, 진행률, 예상 종료시각을 표시합니다.</div>
           <div id="detailContent" class="detail-content hidden">
             <div class="live-summary"><div><span>최근 확인</span><strong id="detailCheckedAt">-</strong></div><div><span>1분 Load</span><strong id="detailLoad">-</strong></div><div><span>Gaussian PID</span><strong id="detailPid">-</strong></div></div>
             <div class="info-grid"><div><span>기관</span><strong id="detailInstitution">-</strong></div><div><span>접속명</span><strong id="detailHost">-</strong></div><div><span>CPU</span><strong id="detailCpu">-</strong></div><div><span>메모리</span><strong id="detailMemory">-</strong></div></div>
@@ -67,6 +65,6 @@
 
   <dialog id="taskDialog"><form id="taskForm" method="dialog"><div class="dialog-header"><div><span class="eyebrow">새 계산</span><h2>계산 작업 등록</h2></div><button type="button" id="closeDialogBtn" class="icon-btn">×</button></div><label>작업명<input id="taskTitleInput" required placeholder="예: FeNO7 quartet Fe–N scan" /></label><label>프로젝트<input id="taskProjectInput" required placeholder="예: FeNO6 / FeNO7" /></label><label>우선순위<select id="taskPriorityInput"><option value="high">높음</option><option value="medium" selected>중간</option><option value="low">낮음</option></select></label><label>담당 서버<select id="taskServerInput"></select></label><div class="dialog-actions"><button type="button" id="cancelDialogBtn" class="btn secondary">취소</button><button type="submit" class="btn primary">등록</button></div></form></dialog>
 
-  <script src="app.js?v=20260727-03"></script><script src="live.js?v=20260727-03"></script><script src="isometric-office.js?v=20260727-10"></script><script src="game-ui.js?v=20260727-03"></script>
+  <script src="app.js?v=20260727-03"></script><script src="live.js?v=20260727-03"></script><script src="isometric-office.js?v=20260727-11"></script><script src="game-ui.js?v=20260727-03"></script>
 </body>
 </html>
