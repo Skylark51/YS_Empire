@@ -5,10 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="color-scheme" content="dark light" />
   <title>영섭랜드 · 계산 왕국 경영실</title>
-  <link rel="stylesheet" href="style.css?v=20260727-02" />
-  <link rel="stylesheet" href="live.css?v=20260727-02" />
-  <link rel="stylesheet" href="game-ui.css?v=20260727-02" />
-  <link rel="stylesheet" href="research-tools.css?v=20260727-02" />
+  <link rel="stylesheet" href="style.css?v=20260727-03" />
+  <link rel="stylesheet" href="live.css?v=20260727-03" />
+  <link rel="stylesheet" href="game-ui.css?v=20260727-03" />
+  <link rel="stylesheet" href="research-tools.css?v=20260727-03" />
+  <link rel="stylesheet" href="isometric-office.css?v=20260727-03" />
 </head>
 <body>
   <div class="app-shell">
@@ -16,7 +17,7 @@
       <div class="brand">
         <div class="brand-mark">YS</div>
         <div>
-          <h1>영섭랜드 계산 왕국 <small>v1.03.1</small></h1>
+          <h1>영섭랜드 계산 왕국 <small>v1.04</small></h1>
           <p>사람 · 서버 · AI가 함께 움직이는 연구 경영 시뮬레이션</p>
         </div>
       </div>
@@ -47,7 +48,7 @@
         <div class="executive-row"><article class="executive-card pixel-panel"><div class="boss-scene"><img src="assets/characters/ceo-youngseop.png" alt="컴퓨터 앞에서 업무를 지휘하는 이영섭 대표" /></div><div><span class="eyebrow">OWNER · 대표이사</span><h3>이영섭 <small>“계산 왕국의 사장”</small></h3><p>연구 전략 · 계산 배치 · 결과 검수 · 월급 지급</p></div><div class="executive-metrics"><strong id="totalJobs">0</strong><span>가동 좌석</span></div></article></div>
 
         <section class="office-tools-floor pixel-panel" aria-label="연구도구 직원">
-          <div class="section-title-row"><div><span class="eyebrow">RESEARCH TOOLS FLOOR</span><h3>분석지원실 · 상시 근무</h3></div><a class="text-btn" href="research-tools.html?v=20260727-02">도구실 열기 →</a></div>
+          <div class="section-title-row"><div><span class="eyebrow">RESEARCH TOOLS FLOOR</span><h3>분석지원실 · 상시 근무</h3></div><a class="text-btn" href="research-tools.html?v=20260727-03">도구실 열기 →</a></div>
           <div class="office-tool-grid">
             <a class="office-tool-worker" href="research-tools.html#parserPanel"><span class="tool-speech">데이터 구조를 분석 중입니다.</span><span class="tool-character tool-character-logan" role="img" aria-label="미래형 데이터 분석가 로건"></span><div><span class="status-chip">근무 중</span><strong>로건 · Gaussian Output Parser</strong><small>대형 .out/.log를 요약·핵심문맥·분할 청크로 재구성</small></div></a>
             <a class="office-tool-worker" href="research-tools.html#siPanel"><span class="tool-speech">SI 초안을 정리하고 있어요.</span><span class="tool-character tool-character-sarah" role="img" aria-label="미래형 연구 운영가 세라"></span><div><span class="status-chip">근무 중</span><strong>세라 · SI Generator</strong><small>에너지·계산조건·최종좌표를 SI 초안과 표로 생성</small></div></a>
@@ -78,6 +79,6 @@
 
   <dialog id="taskDialog"><form id="taskForm" method="dialog"><div class="dialog-header"><div><span class="eyebrow">새 계산</span><h2>계산 작업 등록</h2></div><button type="button" id="closeDialogBtn" class="icon-btn">×</button></div><label>작업명<input id="taskTitleInput" required placeholder="예: FeNO7 quartet Fe–N scan" /></label><label>프로젝트<input id="taskProjectInput" required placeholder="예: FeNO6 / FeNO7" /></label><label>우선순위<select id="taskPriorityInput"><option value="high">높음</option><option value="medium" selected>중간</option><option value="low">낮음</option></select></label><label>담당 서버<select id="taskServerInput"></select></label><div class="dialog-actions"><button type="button" id="cancelDialogBtn" class="btn secondary">취소</button><button type="submit" class="btn primary">등록</button></div></form></dialog>
 
-  <script src="app.js?v=20260727-02"></script><script src="live.js?v=20260727-02"></script><script src="game-ui.js?v=20260727-02"></script>
+  <script src="app.js?v=20260727-03"></script><script src="live.js?v=20260727-03"></script><script src="isometric-office.js?v=20260727-03"></script><script src="game-ui.js?v=20260727-03"></script>
 </body>
 </html>
