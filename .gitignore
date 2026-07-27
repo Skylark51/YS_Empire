@@ -1,0 +1,12 @@
+# Local Lion Agent secrets and runtime data
+server-agent/config.json
+server-agent/data/
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Local editor / OS files
+.vscode/
+.DS_Store
+Thumbs.db
