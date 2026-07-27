@@ -207,16 +207,22 @@ function spriteStyle(server) {
   return `background-image:url('assets/characters/${grid.file}');background-size:${grid.cols * 100}% ${grid.rows * 100}%;background-position:${x}% ${y}%`;
 }
 
+function officeMessage(server) {
+  const messages = { running: '계산 흐름 확인 중!', waiting: '다음 업무를 기다려요.', warning: '검토가 필요합니다.', done: '결과 정리 완료!' };
+  return messages[server.status] || '업무 상태 확인 중';
+}
+
 function renderDepartments() {
   const grid = document.getElementById("departmentGrid");
   grid.innerHTML = departments.map(department => `
     <section class="department department-${department.id} ${department.empty || department.restricted ? "empty-department" : ""}">
       <div class="department-header">
-        <span class="eyebrow">${department.manager}</span>
-        <h3>${department.name}</h3>
+        <div><span class="eyebrow">${department.manager}</span>
+        <h3>${department.name}</h3></div>
+        <span class="department-headcount">${department.servers.length ? `${department.servers.length}명 근무` : "준비 중"}</span>
         <p>${department.description}</p>
       </div>
-      <div class="server-list">
+      <div class="server-list office-floor">
         ${department.restricted ? `
           <div class="restricted-office">
             <div class="gpu-rack"><i></i><i></i></div>
@@ -236,6 +242,7 @@ function renderDepartments() {
           <article class="server-card ${selectedServerId === server.id ? "selected" : ""}"
                    data-server-id="${server.id}" data-status="${server.status}">
             <div class="employee-scene">
+              <div class="speech-bubble">${officeMessage(server)}</div>
               <div class="monitor-glow"></div>
               ${server.avatar ? `<img src="assets/characters/${server.avatar}" alt="${server.name} ${server.role}" />` : server.spriteGroup ? `
                 <div class="character-sprite sprite-${server.spriteGroup}"
