@@ -41,18 +41,19 @@ assert.equal(ui.getMemo({ memo: 'TS 확인' }, 'lion28'), 'TS 확인');
 const live = fs.readFileSync(new URL('../live.js', import.meta.url), 'utf8');
 const paths = [...live.matchAll(/\/api\/[a-z0-9_-]+/gi)].map(match => match[0]);
 assert.ok(paths.length >= 1);
-assert.deepEqual([...new Set(paths)], ['/api/status']);
-assert.equal(/method\s*:\s*['"](?:POST|PUT|PATCH|DELETE)/i.test(live), false);
+assert.deepEqual([...new Set(paths)].sort(), ['/api/notes', '/api/status']);
+assert.match(live, /method\s*:\s*['"]PUT['"]/i);
 assert.match(live, /monitorManaged/);
 
 const html = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 assert.ok(html.indexOf('game-ui.css') > html.indexOf('live.css'));
 assert.ok(html.indexOf('game-ui.js') > html.indexOf('live.js'));
 const gameSource = source;
-assert.match(gameSource, /serverMemoInput[^>]*[\s\S]*disabled/);
-assert.match(gameSource, /saveServerMemoBtn[^>]*[\s\S]*disabled/);
+assert.match(gameSource, /serverMemoInput[^>]*maxlength="4000"/);
+assert.match(gameSource, /saveServerMemoBtn/);
+assert.match(gameSource, /saveSelectedMemo/);
 assert.equal(/localStorage/.test(gameSource), false);
 
 const app = fs.readFileSync(new URL('../app.js', import.meta.url), 'utf8');
 assert.match(app, /!server\.monitorManaged/);
-console.log('PASS: 6 game states, high-load threshold, detail mapping, memo policy, /api/status-only contract');
+console.log('PASS: 6 game states, detail mapping, and writable memo API contract');
