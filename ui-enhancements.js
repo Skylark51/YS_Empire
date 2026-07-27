@@ -41,6 +41,8 @@
     document.dispatchEvent(new CustomEvent('ys:office-controls-ready'));
   }
 
+  let decorationPending = false;
+
   function decorateCharacters() {
     document.querySelectorAll('.office-character[data-server-id]').forEach(character => {
       const server = serverFor(character.dataset.serverId);
@@ -59,9 +61,20 @@
       dot.title = STATUS_LABELS[status];
       dot.setAttribute('aria-label', STATUS_LABELS[status]);
       const label = character.querySelector('.character-name small');
-      if (label) label.textContent = `${server.id} · ${STATUS_LABELS[status]}`;
+      const labelText = `${server.id} · ${STATUS_LABELS[status]}`;
+      if (label && label.textContent !== labelText) label.textContent = labelText;
     });
     globalThis.YSLiveAgent?.applyFilters?.();
+  }
+
+  function scheduleDecoration() {
+    if (decorationPending) return;
+    decorationPending = true;
+    requestAnimationFrame(() => {
+      decorationPending = false;
+      ensureOfficeControls();
+      decorateCharacters();
+    });
   }
 
   function install() {
@@ -70,14 +83,11 @@
 
     const grid = document.getElementById('departmentGrid');
     if (grid) {
-      const observer = new MutationObserver(() => {
-        ensureOfficeControls();
-        decorateCharacters();
-      });
+      const observer = new MutationObserver(scheduleDecoration);
       observer.observe(grid, { childList: true, subtree: true });
     }
 
-    document.addEventListener('ys:status-snapshot', decorateCharacters);
+    document.addEventListener('ys:status-snapshot', scheduleDecoration);
     document.addEventListener('ys:connection-state', event => {
       document.body.classList.toggle('agent-connected', Boolean(event.detail?.connected));
     });
