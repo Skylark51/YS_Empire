@@ -16,21 +16,19 @@
       primaryDepartment.after(researchDepartment);
     }
 
-    const aiDepartment = grid.querySelector(':scope > [data-department-id="ai"]')
-      || researchDepartment.querySelector('[data-department-id="ai"]');
+    const researchGrid = researchDepartment.querySelector(':scope > .research-grid');
+    const aiDepartment = grid.querySelector(':scope > [data-department-id="ai"]');
 
-    if (aiDepartment) {
-      aiDepartment.classList.add('research-ai-subsection');
-
-      const aiTitle = aiDepartment.querySelector(':scope > .partition-title strong');
-      if (aiTitle && aiTitle.textContent !== 'AI 자원') aiTitle.textContent = 'AI 자원';
-
-      if (aiDepartment.parentElement !== researchDepartment) {
-        researchDepartment.appendChild(aiDepartment);
-      }
+    if (researchGrid && aiDepartment) {
+      const aiCharacters = [...aiDepartment.querySelectorAll('.office-character')];
+      aiCharacters.forEach(character => {
+        character.classList.add('research-ai-character');
+        researchGrid.appendChild(character);
+      });
+      aiDepartment.remove();
     }
 
-    const combinedCount = researchDepartment.querySelectorAll('.office-character').length;
+    const combinedCount = researchGrid?.querySelectorAll('.office-character').length || 0;
     const researchCount = researchDepartment.querySelector(':scope > .partition-title span');
     const countLabel = `${combinedCount}명`;
     if (researchCount && researchCount.textContent !== countLabel) researchCount.textContent = countLabel;
