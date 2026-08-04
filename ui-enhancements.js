@@ -12,11 +12,18 @@
     return typeof getServer === 'function' ? getServer(id) : null;
   }
 
+  function removeLegacyGameUi() {
+    document.getElementById('serverOrgTree')?.remove();
+    document.getElementById('gameServerDetail')?.remove();
+    document.querySelectorAll('.server-org-tree, .game-action-layer, .game-state-icon, .game-memo-bubble').forEach(element => element.remove());
+  }
+
   function settleMinimalLayout() {
     const workspace = document.querySelector('.workspace');
     const dock = document.getElementById('officeControlDock');
     if (!workspace || !dock) return false;
 
+    removeLegacyGameUi();
     document.documentElement.setAttribute('data-theme', 'light');
     dock.classList.add('control-rail');
     if (dock.parentElement !== workspace) workspace.appendChild(dock);
@@ -96,6 +103,7 @@
   let decorationPending = false;
 
   function decorateCharacters() {
+    removeLegacyGameUi();
     document.querySelectorAll('.office-character[data-server-id]').forEach(character => {
       const server = serverFor(character.dataset.serverId);
       if (!server) return;
@@ -131,6 +139,7 @@
   }
 
   function install() {
+    removeLegacyGameUi();
     ensureOfficeControls();
     decorateCharacters();
 
