@@ -87,9 +87,12 @@ body.sera-page {
 
 .sera-character-stage {
   position: relative;
-  min-height: 260px;
+  min-height: 350px;
   display: grid;
-  place-items: end center;
+  grid-template-rows: auto minmax(0, 1fr);
+  place-items: stretch center;
+  gap: 8px;
+  padding: 16px 16px 0;
   overflow: hidden;
   border: 1px solid var(--sera-line);
   border-radius: 12px;
@@ -97,25 +100,30 @@ body.sera-page {
 }
 
 .sera-character-stage img {
-  width: min(270px, 78%);
+  align-self: end;
+  justify-self: center;
+  width: min(250px, 72%);
   height: 245px;
+  min-height: 0;
   object-fit: contain;
   object-position: center bottom;
   filter: drop-shadow(0 12px 10px rgba(24, 24, 27, .14));
 }
 
 .sera-speech {
-  position: absolute;
-  z-index: 2;
-  top: 20px;
-  right: 20px;
-  max-width: 230px;
+  position: relative;
+  inset: auto;
+  z-index: 1;
+  justify-self: stretch;
+  max-width: none;
+  margin: 0;
   padding: 11px 13px;
   border: 1px solid var(--sera-strong-line);
-  border-radius: 12px 12px 3px 12px;
+  border-radius: 10px;
   background: var(--sera-card);
   color: var(--sera-text);
   line-height: 1.45;
+  text-align: center;
   box-shadow: 0 8px 20px rgba(24, 24, 27, .08);
 }
 
@@ -370,16 +378,18 @@ body.sera-page {
   }
 
   .sera-character-stage {
-    min-height: 230px;
+    min-height: 330px;
+    padding: 14px 14px 0;
   }
 
   .sera-character-stage img {
+    width: min(230px, 78%);
     height: 220px;
   }
 
   .sera-speech {
-    left: 14px;
-    right: 14px;
+    left: auto;
+    right: auto;
     max-width: none;
   }
 
