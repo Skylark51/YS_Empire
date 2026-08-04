@@ -27,7 +27,7 @@ body.sera-page {
 }
 
 .sera-page .sera-shell {
-  max-width: 1460px;
+  max-width: 1680px;
 }
 
 .sera-page .sera-topbar {
@@ -343,6 +343,130 @@ body.sera-page {
   display: none !important;
 }
 
+.sera-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 330px;
+  gap: 16px;
+  align-items: start;
+}
+
+.sera-workspace-main {
+  min-width: 0;
+}
+
+.si-toolbar {
+  position: sticky;
+  top: 16px;
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  padding: 16px;
+  border: 1px solid var(--sera-line);
+  border-radius: 14px;
+  background: var(--sera-card);
+  color: var(--sera-text);
+}
+
+.si-toolbar-head {
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--sera-line);
+}
+
+.si-toolbar-head h2 {
+  margin: 3px 0 7px;
+  font-size: 22px;
+}
+
+.si-toolbar-head p:last-child,
+.toolbar-help {
+  margin: 0;
+  color: var(--sera-muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.toolbar-block {
+  padding: 16px 0;
+  border-bottom: 1px solid var(--sera-line);
+}
+
+.toolbar-block:last-of-type {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.toolbar-block h3 {
+  margin: 0 0 10px;
+  color: var(--sera-text);
+  font-size: 13px;
+}
+
+.si-toolbar .base-folder-button,
+.si-toolbar #runSi {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  min-height: 46px;
+  align-items: center;
+  text-align: center;
+}
+
+.si-toolbar .base-folder-label {
+  margin: 10px 0;
+  padding: 9px 10px;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.si-toolbar #runSi {
+  min-height: 54px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.si-toolbar .progress-box {
+  margin-top: 10px;
+}
+
+.si-toolbar .shortcut-row,
+.si-toolbar .project-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+  margin: 0;
+}
+
+.si-toolbar .shortcut-row button,
+.si-toolbar .project-row button,
+.si-toolbar .project-row .button-like {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  width: 100%;
+  min-height: 42px;
+  margin: 0;
+  text-align: left;
+}
+
+@media (max-width: 1100px) {
+  .sera-workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .si-toolbar {
+    position: static;
+    order: -1;
+    max-height: none;
+    overflow: visible;
+  }
+
+  .si-toolbar .shortcut-row,
+  .si-toolbar .project-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 1000px) {
   .sera-hero {
     grid-template-columns: 1fr;
@@ -393,10 +517,9 @@ body.sera-page {
     max-width: none;
   }
 
-  .shortcut-row,
-  .project-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
+  .si-toolbar .shortcut-row,
+  .si-toolbar .project-row {
+    grid-template-columns: 1fr;
   }
 
   .shortcut-row button,
