@@ -12,33 +12,83 @@
     return typeof getServer === 'function' ? getServer(id) : null;
   }
 
+  function settleMinimalLayout() {
+    const workspace = document.querySelector('.workspace');
+    const dock = document.getElementById('officeControlDock');
+    if (!workspace || !dock) return false;
+
+    document.documentElement.setAttribute('data-theme', 'light');
+    dock.classList.add('control-rail');
+    if (dock.parentElement !== workspace) workspace.appendChild(dock);
+
+    const brand = document.querySelector('.brand');
+    const connection = dock.querySelector('.connection-cluster');
+    const tools = dock.querySelector('#officeFilterTools');
+    const status = dock.querySelector('.status-strip');
+    let footer = dock.querySelector('.control-rail-footer');
+
+    if (!footer) {
+      footer = document.createElement('div');
+      footer.className = 'control-rail-footer';
+      footer.innerHTML = '<span>YS EMPIRE</span><strong>MINIMAL CONTROL</strong>';
+    }
+
+    [brand, connection, tools, status, footer].filter(Boolean).forEach(node => dock.appendChild(node));
+
+    const topActions = document.querySelector('.top-actions');
+    const addTask = document.getElementById('addTaskBtn');
+    if (topActions && addTask && addTask.parentElement !== topActions) topActions.appendChild(addTask);
+
+    document.querySelector('.todo-card')?.classList.add('minimal-hidden-control');
+    document.querySelector('.event-console')?.classList.add('minimal-hidden-control');
+    document.getElementById('themeToggleBtn')?.classList.add('minimal-hidden-control');
+    document.getElementById('markDoneBtn')?.classList.add('minimal-hidden-control');
+    document.getElementById('needsReviewBtn')?.classList.add('minimal-hidden-control');
+
+    return true;
+  }
+
   function ensureOfficeControls() {
     const dock = document.getElementById('officeControlDock');
-    if (!dock || document.getElementById('officeFilterTools')) return;
+    if (!dock) return;
 
-    const tools = document.createElement('div');
-    tools.id = 'officeFilterTools';
-    tools.className = 'office-filter-tools';
-    tools.innerHTML = `
-      <label class="office-search-box" title="서버·직원·계산 검색">
-        <span aria-hidden="true">⌕</span>
-        <input id="officeServerSearch" type="search" placeholder="lion 또는 계산명 검색" autocomplete="off" />
-      </label>
-      <select id="officeStatusFilter" class="office-status-filter" aria-label="서버 상태 필터">
-        <option value="all">전체 상태</option>
-        <option value="owned">내 서버</option>
-        <option value="running">계산 중</option>
-        <option value="waiting">대기</option>
-        <option value="warning">확인 필요</option>
-        <option value="done">완료</option>
-      </select>
-      <span id="officeVisibleCount" class="office-visible-count">0대 표시</span>
-      <a class="agent-setup-link" href="agent-setup.html" target="_blank" rel="noopener">연결 설정</a>`;
+    let tools = document.getElementById('officeFilterTools');
+    let created = false;
 
-    const connection = dock.querySelector('.connection-cluster');
-    if (connection) connection.insertAdjacentElement('afterend', tools);
-    else dock.prepend(tools);
-    document.dispatchEvent(new CustomEvent('ys:office-controls-ready'));
+    if (!tools) {
+      created = true;
+      tools = document.createElement('div');
+      tools.id = 'officeFilterTools';
+      tools.className = 'office-filter-tools';
+      tools.innerHTML = `
+        <label class="office-search-box" title="서버·직원·계산 검색">
+          <span aria-hidden="true">⌕</span>
+          <input id="officeServerSearch" type="search" placeholder="서버 또는 계산 검색" autocomplete="off" />
+        </label>
+        <select id="officeStatusFilter" class="office-status-filter" aria-label="서버 상태 필터">
+          <option value="all">전체 상태</option>
+          <option value="owned">내 서버</option>
+          <option value="running">계산 중</option>
+          <option value="waiting">대기</option>
+          <option value="warning">확인 필요</option>
+          <option value="done">완료</option>
+        </select>
+        <span id="officeVisibleCount" class="office-visible-count">0대 표시</span>`;
+      dock.appendChild(tools);
+    }
+
+    dock.querySelector('.agent-setup-link')?.remove();
+    settleMinimalLayout();
+
+    if (created) document.dispatchEvent(new CustomEvent('ys:office-controls-ready'));
+  }
+
+  function calmCharacters() {
+    document.querySelectorAll('.talking-character').forEach(character => {
+      character.classList.remove('talking-character', 'speaking');
+      character.removeAttribute('data-speech-pool');
+      character.querySelector('.speech-bubble')?.remove();
+    });
   }
 
   let decorationPending = false;
@@ -64,6 +114,7 @@
       const labelText = `${server.id} · ${STATUS_LABELS[status]}`;
       if (label && label.textContent !== labelText) label.textContent = labelText;
     });
+    calmCharacters();
     globalThis.YSLiveAgent?.applyFilters?.();
   }
 
