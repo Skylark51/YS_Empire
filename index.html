@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="game-ui.css?v=20260727-03" />
   <link rel="stylesheet" href="research-tools.css?v=20260727-04" />
   <link rel="stylesheet" href="isometric-office.css?v=20260727-11" />
+  <link rel="stylesheet" href="office-layout-order.css?v=20260804-01" />
   <link rel="stylesheet" href="ui-enhancements.css?v=20260727-12" />
 </head>
 <body class="characters-only-layout no-server-org">
@@ -17,7 +18,7 @@
     <header class="topbar layout-hidden">
       <div class="brand">
         <div class="brand-mark">YS</div>
-        <div><h1>영섭랜드 서버 관제실 <small>v1.13</small></h1></div>
+        <div><h1>영섭랜드 서버 관제실 <small>v1.14</small></h1></div>
       </div>
       <div class="connection-cluster" aria-label="실시간 연결 상태">
         <button id="connectionBtn" class="connection-button" type="button"><span id="connectionDot" class="connection-dot offline"></span><span><strong id="connectionLabel">샘플 데이터</strong><small id="lastSyncLabel">Lion Agent 미연결</small></span></button>
@@ -66,6 +67,6 @@
 
   <dialog id="taskDialog"><form id="taskForm" method="dialog"><div class="dialog-header"><div><span class="eyebrow">새 계산</span><h2>계산 작업 등록</h2></div><button type="button" id="closeDialogBtn" class="icon-btn">×</button></div><label>작업명<input id="taskTitleInput" required placeholder="예: FeNO7 quartet Fe–N scan" /></label><label>프로젝트<input id="taskProjectInput" required placeholder="예: FeNO6 / FeNO7" /></label><label>우선순위<select id="taskPriorityInput"><option value="high">높음</option><option value="medium" selected>중간</option><option value="low">낮음</option></select></label><label>담당 서버<select id="taskServerInput"></select></label><div class="dialog-actions"><button type="button" id="cancelDialogBtn" class="btn secondary">취소</button><button type="submit" class="btn primary">등록</button></div></form></dialog>
 
-  <script src="app.js?v=20260727-03"></script><script src="live.js?v=20260727-12"></script><script src="isometric-office.js?v=20260727-11"></script><script src="game-ui.js?v=20260727-03"></script><script src="ui-enhancements.js?v=20260727-12"></script><script src="auto-connect.js?v=20260727-13"></script>
+  <script src="app.js?v=20260727-03"></script><script src="live.js?v=20260727-12"></script><script src="isometric-office.js?v=20260727-11"></script><script src="game-ui.js?v=20260727-03"></script><script src="ui-enhancements.js?v=20260727-12"></script><script src="auto-connect.js?v=20260727-13"></script><script src="office-layout-order.js?v=20260804-01"></script>
 </body>
 </html>
