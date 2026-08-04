@@ -1,17 +1,38 @@
 (() => {
   'use strict';
+
+  const isDedicatedSeraPage = document.body?.classList.contains('sera-page');
+  if (!isDedicatedSeraPage && location.hash === '#siPanel') {
+    location.replace('sera.html');
+    return;
+  }
+
   window.addEventListener('DOMContentLoaded', () => {
+    if (!document.body.classList.contains('sera-page')) {
+      const seraTab = document.querySelector('.tool-tab[data-target="siPanel"]');
+      if (seraTab) {
+        seraTab.addEventListener('click', event => {
+          event.preventDefault();
+          event.stopImmediatePropagation();
+          location.href = 'sera.html';
+        }, true);
+      }
+    }
+
     const saveButton = document.getElementById('saveProjectBtn');
     if (saveButton) {
       saveButton.onclick = () => {
         try {
           const settings = typeof collectSettings === 'function' ? collectSettings() : {};
-          const structures = (window.siState?.records || []).map((record) => ({
+          const records = typeof siState !== 'undefined' ? siState.records : [];
+          const structures = records.map(record => ({
             name: record.name,
             structure: record.structure,
-            path: record.path
+            path: record.path,
+            geometrySource: record.geometrySource || null,
+            energySource: record.energySource || null
           }));
-          const payload = JSON.stringify({ version: 2, settings, structures }, null, 2);
+          const payload = JSON.stringify({ version: 3, settings, structures }, null, 2);
           const blob = new Blob([payload], { type: 'application/json;charset=utf-8' });
           const url = URL.createObjectURL(blob);
           const anchor = document.createElement('a');
