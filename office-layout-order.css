@@ -1,30 +1,33 @@
-.research-partition > .research-ai-subsection {
-  margin: 0 8px 10px;
-  border: 0;
-  border-top: 2px solid var(--partition-line);
-  border-radius: 0;
-  background: transparent;
+.research-partition > .research-grid {
+  grid-template-columns: repeat(auto-fit, minmax(92px, 1fr));
+  align-content: start;
+  min-height: 332px;
+  padding: 12px 8px 14px;
 }
 
-.research-partition > .research-ai-subsection > .partition-title {
-  padding: 9px 3px 5px;
-  border-bottom: 0;
+.research-partition .research-ai-character {
+  margin: 0;
 }
 
-.research-partition > .research-ai-subsection > .partition-title strong {
-  font-size: 10px;
-  letter-spacing: .04em;
-  opacity: .82;
-}
-
-.research-partition > .research-ai-subsection > .partition-character-grid {
-  grid-template-columns: repeat(3, minmax(92px, 1fr));
-  min-height: 154px;
-  padding: 3px 0 4px;
+.research-partition .research-ai-character::before {
+  content: "AI";
+  position: absolute;
+  z-index: 3;
+  top: 24px;
+  left: 10px;
+  padding: 2px 5px;
+  border: 1px solid var(--line, var(--partition-line));
+  border-radius: 999px;
+  background: var(--panel, var(--name-bg));
+  color: var(--muted, var(--name-text));
+  font-size: 7px;
+  font-weight: 800;
+  letter-spacing: .08em;
 }
 
 @media (max-width: 900px) {
-  .research-partition > .research-ai-subsection > .partition-character-grid {
+  .research-partition > .research-grid {
     grid-template-columns: repeat(auto-fit, minmax(92px, 1fr));
+    min-height: 0;
   }
 }
