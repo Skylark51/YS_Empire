@@ -21,8 +21,10 @@
     dock.classList.add('control-rail');
     if (dock.parentElement !== workspace) workspace.appendChild(dock);
 
+    document.querySelector('.connection-cluster')?.remove();
+    document.getElementById('connectionDialog')?.remove();
+
     const brand = document.querySelector('.brand');
-    const connection = dock.querySelector('.connection-cluster');
     const tools = dock.querySelector('#officeFilterTools');
     const status = dock.querySelector('.status-strip');
     let footer = dock.querySelector('.control-rail-footer');
@@ -33,7 +35,7 @@
       footer.innerHTML = '<span>YS EMPIRE</span><strong>MINIMAL CONTROL</strong>';
     }
 
-    [brand, connection, tools, status, footer].filter(Boolean).forEach(node => dock.appendChild(node));
+    [brand, tools, status, footer].filter(Boolean).forEach(node => dock.appendChild(node));
 
     const topActions = document.querySelector('.top-actions');
     const addTask = document.getElementById('addTaskBtn');
