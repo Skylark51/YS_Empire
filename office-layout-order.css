@@ -1,0 +1,30 @@
+.research-partition > .research-ai-subsection {
+  margin: 0 8px 10px;
+  border: 0;
+  border-top: 2px solid var(--partition-line);
+  border-radius: 0;
+  background: transparent;
+}
+
+.research-partition > .research-ai-subsection > .partition-title {
+  padding: 9px 3px 5px;
+  border-bottom: 0;
+}
+
+.research-partition > .research-ai-subsection > .partition-title strong {
+  font-size: 10px;
+  letter-spacing: .04em;
+  opacity: .82;
+}
+
+.research-partition > .research-ai-subsection > .partition-character-grid {
+  grid-template-columns: repeat(3, minmax(92px, 1fr));
+  min-height: 154px;
+  padding: 3px 0 4px;
+}
+
+@media (max-width: 900px) {
+  .research-partition > .research-ai-subsection > .partition-character-grid {
+    grid-template-columns: repeat(auto-fit, minmax(92px, 1fr));
+  }
+}
