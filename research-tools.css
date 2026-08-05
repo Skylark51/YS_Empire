@@ -3,3 +3,173 @@
 .office-tools-floor{border-color:var(--line,#34425a);border-radius:18px;background:linear-gradient(145deg,var(--panel,#172033),var(--panel-2,#111827));box-shadow:var(--shadow,0 14px 34px rgba(0,0,0,.2))}.office-tool-grid{margin-top:14px}.office-tool-worker{position:relative;min-height:170px;display:grid;grid-template-columns:150px 1fr;align-items:end;overflow:hidden;background:linear-gradient(180deg,rgba(69,122,155,.12) 0 68%,rgba(8,15,24,.34) 68%);transition:.2s ease}.office-tool-worker:hover{transform:translateY(-2px);border-color:var(--accent,#7dd3fc)}.tool-character{width:144px;height:146px;align-self:end;background-image:url('assets/characters/analysis-future-team.png?v=20260727-02');background-repeat:no-repeat;background-size:200% 100%;background-position:left bottom;filter:drop-shadow(0 10px 9px rgba(0,0,0,.28))}.tool-character-sarah{background-position:right bottom}.tool-speech{position:absolute;z-index:2;top:12px;left:132px;max-width:180px;padding:8px 10px;border:1px solid var(--line,#34425a);border-radius:10px 10px 10px 2px;background:var(--panel,#172033);color:var(--text,#e5e7eb);font-size:10px;box-shadow:0 8px 20px rgba(0,0,0,.15)}.office-tool-worker>div{padding:46px 0 10px}.office-tool-worker strong,.office-tool-worker small{display:block}.office-tool-worker small{margin-top:7px;color:var(--muted,#9ca3af);line-height:1.5}@media(max-width:800px){.office-tool-worker{grid-template-columns:120px 1fr}.tool-character{width:118px;height:130px}.tool-speech{left:106px}}
 /* Dedicated Logan and Sera character art */
 .tool-character-logan{background-image:url('assets/characters/logan-character.svg?v=20260727-01')!important;background-size:100% 100%!important;background-position:center!important;background-repeat:no-repeat!important}.tool-character-sarah{background-image:url('assets/characters/sera-character.svg?v=20260727-01')!important;background-size:100% 100%!important;background-position:center!important;background-repeat:no-repeat!important}
+
+/* Logan research-tools page: light interface aligned with the dedicated Sera screen. */
+html:has(body.tools-page:not(.sera-page)){
+  color-scheme:light;
+  background:#f4f4f5;
+}
+body.tools-page:not(.sera-page){
+  --logan-bg:#f4f4f5;
+  --logan-card:#ffffff;
+  --logan-soft:#f8fafc;
+  --logan-text:#18181b;
+  --logan-muted:#71717a;
+  --logan-line:#e4e4e7;
+  --logan-strong-line:#d4d4d8;
+  --logan-accent:#18181b;
+  min-height:100vh;
+  background:var(--logan-bg);
+  color:var(--logan-text);
+}
+body.tools-page:not(.sera-page) .tools-shell{max-width:1680px}
+body.tools-page:not(.sera-page) .tools-head{
+  padding:18px 20px;
+  margin-bottom:16px;
+  border:1px solid var(--logan-line);
+  border-radius:14px;
+  background:var(--logan-card);
+}
+body.tools-page:not(.sera-page) .tools-head h1,
+body.tools-page:not(.sera-page) .tool-panel h2,
+body.tools-page:not(.sera-page) .form-card h3,
+body.tools-page:not(.sera-page) .employee-mini h2{color:var(--logan-text)}
+body.tools-page:not(.sera-page) .tools-head p,
+body.tools-page:not(.sera-page) .tool-note,
+body.tools-page:not(.sera-page) .employee-mini p,
+body.tools-page:not(.sera-page) .tool-panel>p{color:var(--logan-muted)}
+body.tools-page:not(.sera-page) .tools-head a{
+  display:inline-flex;
+  align-items:center;
+  padding:9px 12px;
+  border:1px solid var(--logan-line);
+  border-radius:8px;
+  background:var(--logan-card);
+  color:var(--logan-text);
+  text-decoration:none;
+}
+body.tools-page:not(.sera-page) .tools-head a:hover{
+  border-color:#a1a1aa;
+  background:var(--logan-soft);
+}
+body.tools-page:not(.sera-page) .employee-mini{
+  border-color:var(--logan-line);
+  background:var(--logan-card);
+  color:var(--logan-text);
+  box-shadow:none;
+}
+body.tools-page:not(.sera-page) .employee-mini.featured{
+  border-color:var(--logan-strong-line);
+  box-shadow:none;
+}
+body.tools-page:not(.sera-page) .employee-mini img{
+  padding:6px;
+  border:1px solid var(--logan-line);
+  border-radius:10px;
+  background:var(--logan-soft);
+}
+body.tools-page:not(.sera-page) .status-chip{
+  background:#ecfdf5;
+  color:#047857;
+}
+body.tools-page:not(.sera-page) .tool-tabs{
+  padding:6px;
+  border:1px solid var(--logan-line);
+  border-radius:12px;
+  background:var(--logan-card);
+}
+body.tools-page:not(.sera-page) .tool-tab,
+body.tools-page:not(.sera-page) .tool-controls button,
+body.tools-page:not(.sera-page) .inline-actions button,
+body.tools-page:not(.sera-page) .generation-bar button,
+body.tools-page:not(.sera-page) .button-like{
+  border-color:var(--logan-line);
+  background:var(--logan-card);
+  color:var(--logan-text);
+}
+body.tools-page:not(.sera-page) .tool-tab:hover,
+body.tools-page:not(.sera-page) .tool-controls button:hover,
+body.tools-page:not(.sera-page) .inline-actions button:hover,
+body.tools-page:not(.sera-page) .generation-bar button:hover,
+body.tools-page:not(.sera-page) .button-like:hover{
+  border-color:#a1a1aa;
+  background:var(--logan-soft);
+}
+body.tools-page:not(.sera-page) .tool-tab.active,
+body.tools-page:not(.sera-page) .primary-large,
+body.tools-page:not(.sera-page) .tool-controls button:not(.secondary){
+  border-color:var(--logan-accent)!important;
+  background:var(--logan-accent)!important;
+  color:#fff!important;
+}
+body.tools-page:not(.sera-page) .secondary{
+  border-color:var(--logan-line)!important;
+  background:var(--logan-card)!important;
+  color:var(--logan-text)!important;
+}
+body.tools-page:not(.sera-page) .tool-panel,
+body.tools-page:not(.sera-page) .form-card,
+body.tools-page:not(.sera-page) .file-row,
+body.tools-page:not(.sera-page) .output-card,
+body.tools-page:not(.sera-page) .progress-box{
+  border-color:var(--logan-line);
+  background:var(--logan-card);
+  color:var(--logan-text);
+  box-shadow:none;
+}
+body.tools-page:not(.sera-page) .drop-zone{
+  border-color:var(--logan-strong-line);
+  background:var(--logan-soft);
+  color:var(--logan-text);
+}
+body.tools-page:not(.sera-page) .drop-zone:hover,
+body.tools-page:not(.sera-page) .drop-zone.drag{
+  border-color:#71717a;
+  background:#f4f4f5;
+}
+body.tools-page:not(.sera-page) .tool-controls select,
+body.tools-page:not(.sera-page) .tool-controls input,
+body.tools-page:not(.sera-page) .form-card input,
+body.tools-page:not(.sera-page) .form-card select,
+body.tools-page:not(.sera-page) .form-card textarea,
+body.tools-page:not(.sera-page) .si-table input,
+body.tools-page:not(.sera-page) .si-table select{
+  border-color:var(--logan-line);
+  background:var(--logan-card);
+  color:var(--logan-text);
+}
+body.tools-page:not(.sera-page) .tool-controls select:focus,
+body.tools-page:not(.sera-page) .tool-controls input:focus,
+body.tools-page:not(.sera-page) .form-card input:focus,
+body.tools-page:not(.sera-page) .form-card select:focus,
+body.tools-page:not(.sera-page) .form-card textarea:focus{
+  outline:2px solid rgba(24,24,27,.12);
+  border-color:#a1a1aa;
+}
+body.tools-page:not(.sera-page) .si-table th,
+body.tools-page:not(.sera-page) .si-table td,
+body.tools-page:not(.sera-page) .output-card th,
+body.tools-page:not(.sera-page) .output-card td{border-color:var(--logan-line)}
+body.tools-page:not(.sera-page) .si-table th{background:var(--logan-soft)}
+body.tools-page:not(.sera-page) .download-link{color:#2563eb}
+body.tools-page:not(.sera-page) .generation-bar{
+  border-top-color:var(--logan-line);
+  background:rgba(255,255,255,.96);
+  backdrop-filter:blur(12px);
+}
+body.tools-page:not(.sera-page) .format-preview{
+  border-color:var(--logan-strong-line);
+  background:var(--logan-soft);
+}
+body.tools-page:not(.sera-page) .mono{
+  padding:12px;
+  border:1px solid var(--logan-line);
+  border-radius:8px;
+  background:var(--logan-soft);
+  color:#27272a;
+}
+@media(max-width:800px){
+  body.tools-page:not(.sera-page) .tools-head{padding:16px}
+  body.tools-page:not(.sera-page) .tool-tabs{overflow-x:auto}
+  body.tools-page:not(.sera-page) .tool-tab{white-space:nowrap}
+}
