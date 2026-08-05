@@ -24,7 +24,7 @@
     <section class="sera-hero" aria-label="SI Generator 담당 세라">
       <div class="sera-character-stage">
         <span class="sera-speech">파일을 모아 주세요. 구조와 에너지는 제가 정리하겠습니다.</span>
-        <img src="assets/characters/sera-character.svg" alt="SI Generator 담당 세라" />
+        <img id="seraCharacterAnimation" src="assets/characters/sera/sera-01.png?v=20260805-01" alt="SI Generator 담당 세라" decoding="async" style="image-rendering: pixelated;" />
       </div>
       <div class="sera-profile">
         <span id="seraStatus" class="status-chip">파일 대기</span>
@@ -183,5 +183,45 @@
   <script src="research-tools.js?v=20260727-01"></script>
   <script src="research-tools-hotfix.js?v=20260804-02"></script>
   <script src="sera-page.js?v=20260804-01"></script>
+  <script>
+    (() => {
+      'use strict';
+      const image = document.getElementById('seraCharacterAnimation');
+      if (!image) return;
+
+      const assetVersion = '20260805-01';
+      const frames = Array.from({ length: 10 }, (_, index) =>
+        `assets/characters/sera/sera-${String(index + 1).padStart(2, '0')}.png?v=${assetVersion}`
+      );
+      frames.forEach(source => {
+        const preload = new Image();
+        preload.src = source;
+      });
+
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+      let frameIndex = 0;
+      let timerId = null;
+      const nextFrame = () => {
+        frameIndex = (frameIndex + 1) % frames.length;
+        image.src = frames[frameIndex];
+      };
+      const startAnimation = () => {
+        if (timerId !== null) return;
+        timerId = window.setInterval(nextFrame, 240);
+      };
+      const stopAnimation = () => {
+        if (timerId === null) return;
+        window.clearInterval(timerId);
+        timerId = null;
+      };
+
+      document.addEventListener('visibilitychange', () => {
+        if (document.hidden) stopAnimation();
+        else startAnimation();
+      });
+      startAnimation();
+    })();
+  </script>
 </body>
 </html>
