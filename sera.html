@@ -42,9 +42,9 @@
       <section id="siPanel" class="tool-panel active sera-generator-panel sera-workspace-main">
         <div class="sera-heading">
           <div>
-            <p class="tool-note">SI GENERATOR v1.5 BASE FOLDER HANDLE WORKFLOW</p>
-            <h2>Gaussian 출력에서 SI 및 XYZ 생성</h2>
-            <p>1) 우측 툴바에서 Base folder 설정 · 2) 실제 사용할 -freq.out 선택 · 3) SI + XYZ 생성 실행</p>
+            <p class="tool-note">SI GENERATOR v1.6 COMPUTATIONAL DETAILS + DOCX</p>
+            <h2>Gaussian 출력에서 Computational Details 포함 SI DOCX 생성</h2>
+            <p>1) Base folder 설정 · 2) 사용할 -freq.out 선택 · 3) 계산 조건 확인 및 확정 · 4) SI + XYZ 생성</p>
           </div>
         </div>
 
@@ -130,7 +130,7 @@
         <div class="si-toolbar-head">
           <p class="tool-note">SI GENERATOR</p>
           <h2>툴바</h2>
-          <p>폴더 선택, 생성 실행, 입력 영역 이동과 설정 관리를 한곳에서 수행합니다.</p>
+          <p>폴더 설정, 생성 실행, 입력 영역 이동과 설정 관리를 한곳에서 수행합니다.</p>
         </div>
 
         <section class="toolbar-block">
@@ -141,7 +141,7 @@
         </section>
 
         <section class="toolbar-block toolbar-generate-block">
-          <button id="runSi" class="primary-large">SI + XYZ 생성</button>
+          <button id="runSi" class="primary-large">SI DOCX + XYZ 생성</button>
           <div id="siProgress" class="progress-box" hidden>
             <div><strong id="siProgressText">준비 중</strong><span id="siProgressPct">0%</span></div>
             <progress id="siProgressBar" max="100" value="0"></progress>
@@ -155,6 +155,7 @@
             <button type="button" data-scroll-target="relativeEnergySection">상대 에너지</button>
             <button type="button" data-scroll-target="spinSection">Mulliken 스핀</button>
             <button type="button" data-scroll-target="geometrySection">주요 기하구조</button>
+            <button type="button" data-scroll-target="computationalDetailsSection">Computational details</button>
           </div>
         </section>
 
@@ -183,6 +184,8 @@
   <script src="research-tools.js?v=20260727-01"></script>
   <script src="research-tools-hotfix.js?v=20260804-02"></script>
   <script src="sera-page.js?v=20260805-03"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+  <script src="sera-computational-details.js?v=20260805-01"></script>
   <script>
     (() => {
       'use strict';
