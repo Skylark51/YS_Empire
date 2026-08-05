@@ -31,6 +31,37 @@ function Test-AgentHealth {
     }
 }
 
+function Test-GatewayKey([string]$Target) {
+    & ssh -o BatchMode=yes -o ConnectTimeout=8 $Target 'hostname' 2>$null
+    return $LASTEXITCODE -eq 0
+}
+
+function Ensure-SshKey {
+    $sshDirectory = Join-Path $env:USERPROFILE '.ssh'
+    $keyPath = Join-Path $sshDirectory 'id_ed25519'
+    $publicKeyPath = "$keyPath.pub"
+
+    if (-not (Test-Path $sshDirectory)) {
+        New-Item -ItemType Directory -Path $sshDirectory | Out-Null
+    }
+
+    if (-not (Test-Path $keyPath) -or -not (Test-Path $publicKeyPath)) {
+        Write-Step '자동 연결용 SSH 키를 생성합니다.'
+        & ssh-keygen -q -t ed25519 -N '' -f $keyPath -C 'ys-empire-lion'
+        if ($LASTEXITCODE -ne 0) { throw 'SSH 키 생성에 실패했습니다.' }
+    }
+
+    return $publicKeyPath
+}
+
+function Register-GatewayKey([string]$Target, [string]$PublicKeyPath) {
+    Write-Step 'Lion 로그인 비밀번호를 한 번 입력해 공개키를 등록합니다.'
+    Write-Host '아래 비밀번호 입력은 웹페이지 토큰이 아니라 실제 Lion SSH 로그인 비밀번호입니다.' -ForegroundColor Yellow
+    Get-Content -Raw -Encoding UTF8 $PublicKeyPath |
+        & ssh -o ConnectTimeout=15 $Target 'umask 077; mkdir -p ~/.ssh; touch ~/.ssh/authorized_keys; cat >> ~/.ssh/authorized_keys; chmod 700 ~/.ssh; chmod 600 ~/.ssh/authorized_keys'
+    if ($LASTEXITCODE -ne 0) { throw 'Lion 게이트웨이에 SSH 공개키를 등록하지 못했습니다.' }
+}
+
 Set-Location $AgentRoot
 
 Write-Step '로컬 설정을 준비합니다.'
@@ -55,10 +86,14 @@ $gatewayUser = if ($config.gateway_user) { [string]$config.gateway_user } else {
 $gatewayTarget = "$gatewayUser@$gateway"
 
 Write-Step "SSH 자동 로그인을 확인합니다: $gatewayTarget"
-& ssh -o BatchMode=yes -o ConnectTimeout=8 $gatewayTarget 'hostname'
-if ($LASTEXITCODE -ne 0) {
-    throw "게이트웨이 SSH 키 로그인이 실패했습니다. server-agent\test_ssh.bat을 먼저 실행하세요."
+if (-not (Test-GatewayKey $gatewayTarget)) {
+    $publicKeyPath = Ensure-SshKey
+    Register-GatewayKey $gatewayTarget $publicKeyPath
+    if (-not (Test-GatewayKey $gatewayTarget)) {
+        throw '공개키 등록 후에도 자동 로그인이 실패했습니다. 입력한 Lion 비밀번호와 계정을 확인하세요.'
+    }
 }
+Write-Host '게이트웨이 SSH 자동 로그인 확인 완료.' -ForegroundColor Green
 
 Write-Step '게이트웨이에서 lion28 내부 접속을 확인합니다.'
 & ssh -o BatchMode=yes -o ConnectTimeout=8 $gatewayTarget 'ssh -o BatchMode=yes -o ConnectTimeout=8 lion28 hostname'
@@ -93,4 +128,5 @@ $encodedToken = [Uri]::EscapeDataString($token)
 $connectUrl = "${PageUrl}#ys_endpoint=$endpoint&ys_token=$encodedToken&ys_poll=10000"
 Start-Process $connectUrl
 
-Write-Host "`n연결 창을 열었습니다. 이 PowerShell 창은 닫아도 되지만, 별도로 열린 Lion Agent 창은 유지하세요." -ForegroundColor Green
+Write-Host "`n연결이 완료되었습니다. 이후 같은 브라우저에서는 Agent가 실행 중이면 자동으로 Lion 실시간 상태가 적용됩니다." -ForegroundColor Green
+Write-Host '웹페이지에서 다시 묻는 값은 Lion 비밀번호가 아니라 config.json의 api_token입니다.' -ForegroundColor Yellow
