@@ -29,11 +29,11 @@
       <div class="sera-profile">
         <span id="seraStatus" class="status-chip">파일 대기</span>
         <h2>세라</h2>
-        <p>파일명에 의존하지 않고 Gaussian 출력의 구조와 계산 조건을 비교해 opt/freq와 single-point 결과를 묶습니다.</p>
+        <p>Base folder는 파일을 일괄 입력하지 않고 대응 파일을 찾기 위한 경로 기준으로만 사용합니다.</p>
         <dl>
           <div><dt>담당</dt><dd>SI + XYZ 생성</dd></div>
           <div><dt>기본 Spin</dt><dd>|ρ| 상위 6개 원자</dd></div>
-          <div><dt>입력 방식</dt><dd>폴더 재귀 선택 / 개별 파일 드롭</dd></div>
+          <div><dt>입력 방식</dt><dd>Base folder 핸들 / 개별 파일</dd></div>
         </dl>
       </div>
     </section>
@@ -42,20 +42,20 @@
       <section id="siPanel" class="tool-panel active sera-generator-panel sera-workspace-main">
         <div class="sera-heading">
           <div>
-            <p class="tool-note">SI GENERATOR v1.3 WEB WORKFLOW</p>
+            <p class="tool-note">SI GENERATOR v1.5 BASE FOLDER HANDLE WORKFLOW</p>
             <h2>Gaussian 출력에서 SI 및 XYZ 생성</h2>
-            <p>1) 우측 툴바에서 Base folder 선택 · 2) 필요한 데이터 입력 · 3) SI + XYZ 생성 실행</p>
+            <p>1) 우측 툴바에서 Base folder 설정 · 2) 실제 사용할 -freq.out 선택 · 3) SI + XYZ 생성 실행</p>
           </div>
         </div>
 
         <div class="workflow-grid">
           <section class="form-card span-2" id="fileSection">
             <div class="section-head-row">
-              <div><h3>0. Gaussian 파일</h3><p class="tool-note">개별 파일은 아래 영역에 놓거나 클릭하여 추가합니다. 폴더 전체 선택은 우측 고정 툴바에서 진행합니다.</p></div>
+              <div><h3>0. Gaussian 파일</h3><p class="tool-note">Base folder는 경로 기준만 설정합니다. 아래에서 실제 사용할 -freq.out 파일만 선택하세요.</p></div>
             </div>
             <label id="siDrop" class="drop-zone">
               <strong>Gaussian .out / .log 파일을 놓거나 클릭하여 선택</strong>
-              <small>파일명을 일치시키지 않아도 구조 fingerprint와 계산 조건으로 opt/freq 및 single-point를 연결합니다.</small>
+              <small>선택한 -freq.out만 입력하고, 대응하는 -freq-bb.out은 설정된 Base folder에서 자동으로 찾습니다.</small>
               <input id="siFiles" type="file" accept=".out,.log,.txt" multiple hidden />
             </label>
             <div class="inline-actions compact-actions">
@@ -98,7 +98,7 @@
           <section class="form-card" id="spinSection">
             <h3>4. Mulliken spin density</h3>
             <label>Atom IDs<input id="spinManualIds" placeholder="예: 1, 12, 38, 39" /></label>
-            <p class="tool-note">비워 두면 모든 구조를 기준으로 |spin density|가 큰 원자 6개를 자동 선택합니다.</p>
+            <p class="tool-note">Mulliken spin density는 반드시 자동 연결된 -freq-bb.out에서만 읽습니다. 비워 두면 |spin| 상위 6개 원자를 선택합니다.</p>
             <label class="check"><input id="spinSeparateReport" type="checkbox" checked /> 강조 분석 별도 보고서 생성</label>
             <input id="spinAuto" type="checkbox" hidden />
             <input id="spinAutoCount" type="number" value="6" hidden />
@@ -135,9 +135,9 @@
 
         <section class="toolbar-block">
           <h3>Base folder</h3>
-          <label class="button-like base-folder-button">Base folder 선택<input id="siFolder" type="file" webkitdirectory directory multiple hidden /></label>
-          <div id="baseFolderLabel" class="base-folder-label">Base folder가 선택되지 않았습니다.</div>
-          <p class="toolbar-help">선택한 폴더의 하위 폴더까지 읽습니다. 브라우저에서는 실제 절대경로 대신 상대경로를 표시합니다.</p>
+          <button id="siFolder" type="button" class="button-like base-folder-button">Base folder 설정</button>
+          <div id="baseFolderLabel" class="base-folder-label">Base folder가 설정되지 않았습니다.</div>
+          <p class="toolbar-help">폴더 핸들만 설정합니다. 폴더 전체 파일은 입력하거나 읽지 않으며, 선택한 -freq.out의 대응 -freq-bb.out만 필요할 때 읽습니다.</p>
         </section>
 
         <section class="toolbar-block toolbar-generate-block">
@@ -182,7 +182,7 @@
 
   <script src="research-tools.js?v=20260727-01"></script>
   <script src="research-tools-hotfix.js?v=20260804-02"></script>
-  <script src="sera-page.js?v=20260805-02"></script>
+  <script src="sera-page.js?v=20260805-03"></script>
   <script>
     (() => {
       'use strict';
