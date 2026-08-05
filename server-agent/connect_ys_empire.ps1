@@ -32,7 +32,7 @@ function Test-AgentHealth {
 }
 
 function Test-GatewayKey([string]$Target) {
-    & ssh -o BatchMode=yes -o ConnectTimeout=8 $Target 'hostname' 2>$null
+    & ssh -o BatchMode=yes -o ConnectTimeout=8 $Target 'hostname' >$null 2>&1
     return $LASTEXITCODE -eq 0
 }
 
@@ -47,7 +47,7 @@ function Ensure-SshKey {
 
     if (-not (Test-Path $keyPath) -or -not (Test-Path $publicKeyPath)) {
         Write-Step '자동 연결용 SSH 키를 생성합니다.'
-        & ssh-keygen -q -t ed25519 -N '' -f $keyPath -C 'ys-empire-lion'
+        & ssh-keygen -q -t ed25519 -N '""' -f $keyPath -C 'ys-empire-lion'
         if ($LASTEXITCODE -ne 0) { throw 'SSH 키 생성에 실패했습니다.' }
     }
 
